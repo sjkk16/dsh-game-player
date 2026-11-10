@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "themes": {
+    "dark": {
+      "background": "#111722",
+      "text": "#E6EDF6",
+      "muted": "#8795A9",
+      "keyFill": "#1F2937",
+      "keyEdge": "#39475A"
+    },
+    "light": {
+      "background": "#F2F5FA",
+      "text": "#1B2430",
+      "muted": "#5B6B80",
+      "keyFill": "#FFFFFF",
+      "keyEdge": "#C8D2E0"
+    },
+    "contrast": {
+      "background": "#000000",
+      "text": "#FFFFFF",
+      "muted": "#D0D8E4",
+      "keyFill": "#101014",
+      "keyEdge": "#E0E6F0"
+    }
+  },
+  "accents": {
+    "teal": {
+      "dark": "#49DFBE",
+      "light": "#0E9C84",
+      "contrast": "#22FFE0"
+    },
+    "sky": {
+      "dark": "#4DA6FF",
+      "light": "#0B62C4",
+      "contrast": "#6FD0FF"
+    },
+    "violet": {
+      "dark": "#B98CFF",
+      "light": "#6A3FD0",
+      "contrast": "#D6B0FF"
+    },
+    "rose": {
+      "dark": "#FF7A9A",
+      "light": "#C22B55",
+      "contrast": "#FF9FC0"
+    },
+    "lime": {
+      "dark": "#A8E05F",
+      "light": "#3E7A00",
+      "contrast": "#D6FF66"
+    }
+  },
+  "simulation": {
+    "dark": "#FFB753",
+    "light": "#B45F00",
+    "contrast": "#FFD400"
+  }
+}

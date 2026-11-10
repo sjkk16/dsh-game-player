@@ -1,0 +1,74 @@
+{
+  "name": "@local/dsh-game-player",
+  "version": "0.3.7",
+  "private": true,
+  "type": "module",
+  "description": "Give the model a virtual mouse and keyboard plus a live view of the screen, so it can play a windowed game.",
+  "license": "MIT",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "src/*.js",
+    "src/*.mjs",
+    "src/*.ps1",
+    "src/*.cs",
+    "src/*.json",
+    "src/live2d/*.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "desktop/*.cs",
+    "desktop/*.csproj",
+    "desktop/*.manifest",
+    "desktop/packages.lock.json",
+    "desktop/profiles/*.json",
+    "desktop/*.js",
+    "desktop/web/*.html",
+    "desktop/web/*.css",
+    "scripts/*.mjs",
+    "scripts/sdk-files.json",
+    "runtime/desktop-0.3.7/*.exe",
+    "runtime/desktop-0.3.7/*.dll",
+    "runtime/desktop-0.3.7/*.json",
+    "runtime/desktop-0.3.7/web/**/*",
+    "runtime/desktop-0.3.7/profiles/*.json",
+    "runtime/desktop-0.3.7/licenses/*",
+    "runtime/desktop-0.3.7/runtimes/**/native/*.dll"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
+    }
+  },
+  "scripts": {
+    "test": "node scripts/test.mjs",
+    "test:safe": "node scripts/test.mjs",
+    "test:pack": "node scripts/check-package.mjs",
+    "test:release": "node scripts/check-package.mjs --runtime",
+    "build:live2d": "node scripts/build-live2d.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/schemastery": "3.18.5"
+  }
+}

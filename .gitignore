@@ -1,0 +1,43 @@
+# Installed dependencies and generated artifacts
+/node_modules/
+/dist/
+/.qa/
+/runtime/
+/desktop/bin/
+/desktop/obj/
+/desktop/web/renderer.js
+/desktop/web/vendor/
+/desktop/web/shaders/
+
+# Local models, personal data and credentials
+/models/
+/Deepseek桌宠/
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.p12
+*.key
+*.moc3
+*.model3.json
+*.motion3.json
+*.exp3.json
+*.physics3.json
+*.pose3.json
+*.cdi3.json
+*.user3.json
+
+# Debug, temporary, editor and archive files
+*.pdb
+*.log
+*.tmp
+*.bak
+*.tgz
+*.zip
+*.7z
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

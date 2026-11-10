@@ -1,0 +1,18 @@
+- insert:
+    - id: game-player
+      name: '@local/dsh-game-player'
+      config:
+        # Real input requires host approval by default. Desktop management
+        # remains display-only and never bypasses input approval.
+        requireApproval: true
+        # Display-only desktop keyboard and mouse; never changes input approval.
+        overlayEnabled: true
+        # Screenshot width in pixels; height follows the screen aspect ratio.
+        maxWidth: 1280
+        jpegQuality: 60
+        # 'primary' captures the primary monitor; 'virtual' captures every monitor.
+        monitor: primary
+        # Upper bound for one held key or mouse button.
+        maxHoldMs: 3000
+        # How long one helper request may take before it is abandoned.
+        helperTimeoutMs: 15000

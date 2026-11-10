@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Game Player">
+  <defs>
+    <linearGradient id="gp-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f8fe0"/>
+      <stop offset="1" stop-color="#1b5f9e"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#101a26"/>
+  <g stroke="#2f8fe0" stroke-width="2.5" stroke-linecap="round" opacity="0.75">
+    <path d="M32 6v9"/>
+    <path d="M32 49v9"/>
+    <path d="M6 32h9"/>
+    <path d="M49 32h9"/>
+  </g>
+  <circle cx="32" cy="32" r="16" fill="none" stroke="#2f8fe0" stroke-width="2" opacity="0.5"/>
+  <path d="M32 13c-8.3 0-14 5.4-14 13.4v9.2C18 44.6 24.3 51 32 51s14-6.4 14-15.4v-9.2C46 18.4 40.3 13 32 13Z" fill="url(#gp-body)"/>
+  <path d="M32 13v18" stroke="#0d2436" stroke-width="1.6" opacity="0.6"/>
+  <path d="M18.6 26.5h13.2v-6.1c-5.9.4-10.4 2.8-13.2 6.1Z" fill="#7cc4f5" opacity="0.85"/>
+  <circle cx="32" cy="32" r="4.2" fill="#101a26"/>
+  <circle cx="32" cy="32" r="1.7" fill="#e9f6ff"/>
+</svg>

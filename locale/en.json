@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Game Player",
+    "description": "Gives the model a virtual mouse and keyboard and a live view of the screen, so it can watch and play a windowed game."
+  }
+}
