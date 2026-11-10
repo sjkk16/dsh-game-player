@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { DESKTOP_RUNTIME_DIRECTORY } from '../src/desktop-runtime.js'
 
 export const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)))
-export const sourceRoots = ['package.json', 'index.js', 'client.js', 'cordis.patch.yml', 'icon.svg', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'pnpm-lock.yaml']
+export const sourceRoots = ['package.json', 'index.js', 'client.js', 'cordis.patch.yml', 'icon.svg', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'CHANGELOG.md', 'pnpm-lock.yaml', 'pnpm-workspace.yaml']
 const sourcePatterns = [
   /^src\/(?:[^/]+\.(?:js|mjs|ps1|cs|json)|live2d\/[^/]+\.js)$/,
   /^locale\/[^/]+\.json$/,

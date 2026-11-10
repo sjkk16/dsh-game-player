@@ -3,7 +3,6 @@ import { normalize } from 'node:path'
 import { preferenceError,validatePreferencePatch } from './overlay-preferences.js'
 import { mergeGlobalAdapter } from './live2d/global-adapter.js'
 import { validateAdapterAgainstCatalog } from './live2d/model-adapter.js'
-import {validateWatermarkChange,validateWatermarkRecords,validateWatermarkCatalog} from './live2d/watermark.js'
 const canonical=p=>typeof p==='string'?normalize(p).replaceAll('\\','/').replace(/\/$/,'').toLowerCase():null
 const plain=v=>v&&typeof v==='object'&&!Array.isArray(v)
 /** Candidate discovery and parameter catalogs are display-only; never import the input bridge. */
@@ -11,7 +10,7 @@ export class OverlayModels {
  constructor(manager){this.manager=manager;this.overlay=manager.overlay;this.cache=null;this.candidates=null;this.seenToken=null;this.loadedSource=null;this.proofAt=0;this.proofTask=null;this.reloadRequired=false}
  selection(p=this.manager.store.value){return JSON.stringify([canonical(p.modelPath??this.overlay.defaultModel),p.modelEntry??null])}
  currentKey(p=this.manager.store.value){if(this.cache?.selection===this.selection(p))return this.cache.modelKey;const o=this.overlay;if(canonical(o.runtime.modelSourcePath)===canonical(p.modelPath??o.defaultModel))return o.runtime.modelKey??null;return null}
- source(p=this.manager.store.value){const key=this.currentKey(p);return JSON.stringify([this.selection(p),p.globalAdapter,p.globalAdapter===null?[p.profilePath,p.modelOverrides]:null,key?p.modelWatermarks?.[key]??null:null])}
+ source(p=this.manager.store.value){return JSON.stringify([this.selection(p),p.globalAdapter,p.globalAdapter===null?[p.profilePath,p.modelOverrides]:null])}
  invalidate(){this.cache=null;this.seenToken=this.overlay.runtime.modelToken??null;this.loadedSource=null;this.proofAt=0}
  cancelSelection(){this.candidates=null}
  async assertProof(proof){
@@ -41,11 +40,11 @@ export class OverlayModels {
  }
  accept(reply){
   const a=this.validate(reply),parameters=a.parameters,key=reply.modelKey
-  const selection=this.selection(),sourceProof=reply.sourceProof??[],stable=JSON.stringify([parameters,a.inputs,a.effects,a.handStyles,a.handStyle,a.warnings,a.poseSupported,a.watermark])
+  const selection=this.selection(),sourceProof=reply.sourceProof??[],stable=JSON.stringify([parameters,a.inputs,a.effects,a.handStyles,a.handStyle,a.warnings,a.poseSupported])
   const source=this.source()
   const previous=this.cache?.source===source&&this.cache?.modelKey===key?this.cache:null
   const same=this.cache&&this.cache.source===source&&this.cache.signature===reply.signature&&this.cache.stable===stable
-  this.cache={generation:same?this.cache.generation:randomUUID(),selection,source,modelKey:key,signature:reply.signature,stable,sourceProof,parameters,inputs:structuredClone(a.inputs),effects:structuredClone(a.effects),handStyles:structuredClone(a.handStyles),handStyle:a.handStyle??'default',watermark:a.watermark?validateWatermarkCatalog(a.watermark):null,warnings:[...(a.warnings??[])].slice(0,132),handGroups:a.handGroups??0,handCache:a.handCache??null,poseSupported:a.poseSupported===true,globalAdapter:structuredClone(reply.globalAdapter??this.manager.store.value.globalAdapter??previous?.globalAdapter??{}),fallbacks:structuredClone(reply.fallbacks??previous?.fallbacks??[])}
+  this.cache={generation:same?this.cache.generation:randomUUID(),selection,source,modelKey:key,signature:reply.signature,stable,sourceProof,parameters,inputs:structuredClone(a.inputs),effects:structuredClone(a.effects),handStyles:structuredClone(a.handStyles),handStyle:a.handStyle??'default',warnings:[...(a.warnings??[])].slice(0,132),handGroups:a.handGroups??0,handCache:a.handCache??null,poseSupported:a.poseSupported===true,globalAdapter:structuredClone(reply.globalAdapter??this.manager.store.value.globalAdapter??previous?.globalAdapter??{}),fallbacks:structuredClone(reply.fallbacks??previous?.fallbacks??[])}
   this.loadedSource=source;this.seenToken=reply.modelToken;this.reloadRequired=false;this.manager.lastError=null;return this.cache
  }
  snapshot(){
@@ -82,11 +81,6 @@ export class OverlayModels {
    if(this.candidates===catalog)this.candidates=null
   }finally{if(m.load===controller)m.load=null;if(m.busy==='selectingModel')m.busy=null}
  }
-  watermarkPatch(change){
-   const value=validateWatermarkChange(change),c=this.cache;if(!c||c.generation!==value.catalogGeneration)throw preferenceError('stale_adapter_catalog','Read current model parameters again.');
-   if(!c.watermark?.supported)throw preferenceError('unsupported','This model has no authorized validated watermark switch.');
-   const records={...(this.manager.store.value.modelWatermarks??{})};if(value.mode==='hidden')records[c.modelKey]={mode:'hidden',mocHash:c.watermark.mocHash};else delete records[c.modelKey];return {modelWatermarks:validateWatermarkRecords(records)};
-  }
  adapterPatch(change){
   const cache=this.cache;if(!cache||change.catalogGeneration!==cache.generation)throw preferenceError('stale_adapter_catalog','Read the current model parameters first.')
   // Newly selected IDs must belong to the editing catalog, even though existing globals may fall back.

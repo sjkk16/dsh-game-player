@@ -14,7 +14,6 @@ public sealed class OverlaySettings {
     public string? ProfilePath { get; set; }
     public string? ModelEntry { get; set; }
     public JsonObject ModelOverrides { get; set; }=new();
-    public JsonObject ModelWatermarks { get; set; }=new();
     /** Locally imported keyboard image, copied next to this file by the tray import. */
     public string? KeyboardImage { get; set; }
     public double WidthDip { get; set; }=420;

@@ -98,7 +98,7 @@ async function runPrivateFrames(message) {
   if(message.state){state=message.state;stateAt=performance.now();updateLabels();scheduleExpiry()}
   await scene.warm(effective());const start=performance.now();let last=start,next=start,sample=0;const samples=[...times].sort((a,b)=>a-b),names=[]
   const cursorAudit=message.cursorPath?{frames:0,targets:0,geometryChecks:0,maxAppearanceDrift:0,maxPartDrift:0,nonfiniteParameters:0,nonfiniteVertices:0,glErrors:0,handOutOfRange:0,maxHandError:0}:null
-  const owned=new Set([...(scene.adaptation.effects.filter(e=>e.enabled).flatMap(e=>e.ids)),...scene.physicsIds,...Object.keys(scene.cursorGaze.handValues(scene.profile)),...(scene.watermark?.mode==='hidden'?['Paramshuiying']:[])]),partRecords=Object.entries(scene.parts),baseline=scene.baseVisual.parameters
+  const owned=new Set([...(scene.adaptation.effects.filter(e=>e.enabled).flatMap(e=>e.ids)),...scene.physicsIds,...Object.keys(scene.cursorGaze.handValues(scene.profile))]),partRecords=Object.entries(scene.parts),baseline=scene.baseVisual.parameters
   let cursorTick=-1,geometryAt=0
   const cursorTarget=elapsed=>{
     const t=(duration>60000?elapsed%60000:elapsed)/1000
@@ -140,10 +140,6 @@ async function runPrivateFrames(message) {
 function cancel() { generation++;loadController?.abort();candidate?.release();candidate=null }
 function commit(token) {
   if(!candidate||candidate.manifest.token!==token)return
-  if(candidate.manifest.preserveInputTimeline){const current=effective();if(disposed||lost||!active||active.manifest.token!==candidate.manifest.watermarkOrigin||active.mocHash!==candidate.mocHash||!candidate.manifest.restoreWatermark&&(active.motion||['unknown','locked','releasing','syncing'].includes(current.status))){notify({kind:'watermark-commit-rejected',token});return}
-    candidate.realPose=active.realPose?{...active.realPose,values:{...active.realPose.values}}:null;candidate.realFrame=active.realFrame;candidate.hasRealFrame=active.hasRealFrame;candidate.lastMode=active.lastMode;candidate.poseOpacityState={...active.poseOpacityState};candidate.needsStabilize=true;
-    for(const key of ['x','y','targetX','targetY','initialized'])candidate.cursorGaze[key]=active.cursorGaze[key];candidate.cursorGaze.enabled=false;
-  }
   cursorProgress.reset();identity.title='';const previous=active;active=candidate;candidate=null;active.committed=true;showGeneration++;const scene=active;active.onHandReady=()=>handChanged(scene);handStatus=""
   try { draw();previous?.release();notify({kind:'model-committed',token});scheduler.touch() }
   catch(error){const failed=active;active=previous;failed.release();report(error,token)}
@@ -153,9 +149,7 @@ window.addEventListener('error',event=>report(event.message));window.addEventLis
 resizeObserver.observe(document.querySelector('main'))
 host.addEventListener('message',event=>{
   const message=event.data
-  if(message.kind==='get-watermark-gate'){
-    const current=effective();notify({kind:'watermark-gate',id:message.id,token:active?.manifest.token,safe:!disposed&&!lost&&!!active&&message.token===active.manifest.token&&!active.motion&&!['unknown','locked','releasing','syncing'].includes(current.status)});
-  }else if(message.kind==='cursor-gaze-control'){
+  if(message.kind==='cursor-gaze-control'){
     if(!disposed&&!lost)cursorProgress.control(message,active?.manifest.token)
   }else if(message.kind==='cursor-gaze'){
     // Separate display channel: never touch state/stateAt, labels, previews or motion ownership.
@@ -193,14 +187,6 @@ host.addEventListener('message',event=>{
       if(message.visibility!==undefined){if(!message.visibility){active.cursorGaze.suspend();stopMotion('hidden')}else active.resume();scheduler.setVisible(message.visibility===true)}
       if(message.state){state=message.state;stateAt=performance.now();updateLabels();scheduleExpiry()}
       await active.warm(effective());
-      if(message.watermarkProbe!==undefined){
-        const value=message.watermarkProbe;if(![0,1].includes(value)||!active.parameters.Paramshuiying)throw Error('Invalid private watermark probe');
-        const saved=active.visualSnapshot();active.qaWatermarkBase??=saved;active.restoreVisual(active.qaWatermarkBase);active.apply({Paramshuiying:value});active.model.core().update();active.render(canvas.width,canvas.height);
-        const core=active.model.core(),drawables=[];
-        for(let i=0;i<core.getDrawableCount();i++)drawables.push({id:core.getDrawableId(i).getString(),opacity:core.getDrawableOpacity(i),vertices:Array.from(core.getDrawableVertices(i)),masks:Array.from(core.getDrawableMasks()[i]??[])});
-        notify({kind:'qa-step',id:message.id,name:message.name,image:canvas.toDataURL('image/png'),values:active.snapshot(),visual:active.visualSnapshot(),bounds:active.bounds,drawables,parameters:active.parameters});
-        active.restoreVisual(saved);core.update();return;
-      }
       const savedLayout=active.manifest.layout
       if(message.projection!==undefined){
         const q=message.projection
@@ -213,7 +199,7 @@ host.addEventListener('message',event=>{
       draw(performance.now(),0)
       const combined=document.createElement('canvas');combined.width=canvas.width;combined.height=canvas.height
       const context=combined.getContext('2d');context.drawImage(canvas,0,0);context.drawImage(hands,0,0)
-      notify({kind:'qa-step',id:message.id,name:message.name,image:combined.toDataURL('image/png'),pose:active.pose,values:active.snapshot(),physicsSteps:active.physicsSteps,physicsSeconds:active.physicsSeconds,bounds:active.bounds,motion:active.motion,visual:active.visualSnapshot(),handCache:active.handCache.stats(),diagnostics:active.qaSnapshot(),watermark:active.watermarkReport(),gaze:{enabled:active.cursorGaze.enabled,x:active.cursorGaze.x,y:active.cursorGaze.y,sequence:active.cursorGaze.sequence},projection:{...active.manifest.layout}})
+      notify({kind:'qa-step',id:message.id,name:message.name,image:combined.toDataURL('image/png'),pose:active.pose,values:active.snapshot(),physicsSteps:active.physicsSteps,physicsSeconds:active.physicsSeconds,bounds:active.bounds,motion:active.motion,visual:active.visualSnapshot(),handCache:active.handCache.stats(),diagnostics:active.qaSnapshot(),gaze:{enabled:active.cursorGaze.enabled,x:active.cursorGaze.x,y:active.cursorGaze.y,sequence:active.cursorGaze.sequence},projection:{...active.manifest.layout}})
       }finally{active.manifest.layout=savedLayout}
     }).catch(report)
   }

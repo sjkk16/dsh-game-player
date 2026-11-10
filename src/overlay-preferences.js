@@ -3,10 +3,9 @@ import { dirname, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { validateGlobalAdapter } from './live2d/global-adapter.js'
 import { validateAdapterChange } from './live2d/model-adapter.js'
-import {validateWatermarkChange,validateWatermarkRecords} from './live2d/watermark.js'
 
 export const PREFERENCE_DEFAULTS = Object.freeze({
-  version: 5, globalAdapter: Object.freeze({}), view: 'model', modelPath: null, profilePath: null, modelEntry: null, modelOverrides: Object.freeze({}), modelWatermarks: Object.freeze({}), keyboardImage: null,
+  version: 5, globalAdapter: Object.freeze({}), view: 'model', modelPath: null, profilePath: null, modelEntry: null, modelOverrides: Object.freeze({}), keyboardImage: null,
   widthDip: 420, keyboardWidthDip: 900, opacity: 1, x: null, y: null,
 })
 const ranges = { widthDip: [220, 1000], keyboardWidthDip: [450, 1350], opacity: [.45, 1] }
@@ -33,7 +32,6 @@ export function validatePreferencePatch(patch) {
      } else if (key === 'modelEntry') {
       if(value!==null&&(typeof value!=='string'||value.length>4096||!value.toLowerCase().endsWith('.model3.json')||/^[\\/]|[:%?#\0]/.test(value)||value.replaceAll('\\','/').split('/').some(p=>p==='..')))throw preferenceError('invalid_preferences','Invalid model entry.')
     } else if(key==='globalAdapter'){result[key]=value===null?null:validateGlobalAdapter(value);continue
-    } else if(key==='modelWatermarks'){result[key]=validateWatermarkRecords(value);continue
     } else if (key === 'modelOverrides') {
       if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length>32)throw preferenceError('invalid_preferences','Too many or invalid model adapters.')
       const records={}
@@ -59,11 +57,10 @@ export function validatePreferencePatch(patch) {
 /** Wire-only adapter edits are converted by management; records and paths are never caller-selected. */
 export function validatePreferenceRequest(patch){
  if(!patch||typeof patch!=='object'||Array.isArray(patch))throw preferenceError('invalid_preferences','Expected a preference patch.')
- const {modelAdapter,modelWatermark,...base}=patch
- if('globalAdapter'in base||'modelWatermarks'in base||'modelOverrides'in base||'modelEntry'in base)throw preferenceError('invalid_preferences','Use the model selection commands.')
+ const {modelAdapter,...base}=patch
+ if('globalAdapter'in base||'modelOverrides'in base||'modelEntry'in base)throw preferenceError('invalid_preferences','Use the model selection commands.')
  const result=validatePreferencePatch(base)
  if(Object.prototype.hasOwnProperty.call(patch,'modelAdapter'))result.modelAdapter=validateAdapterChange(modelAdapter)
- if(Object.prototype.hasOwnProperty.call(patch,'modelWatermark')){if(Object.keys(patch).length!==1)throw preferenceError('invalid_preferences','Watermark changes cannot be combined with other edits.');result.modelWatermark=validateWatermarkChange(modelWatermark)}
  return result
 }
 

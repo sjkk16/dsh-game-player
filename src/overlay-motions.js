@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { preferenceError } from './overlay-preferences.js'
+import { requireModelSelection } from './model-selection.js'
 const canceled=()=>preferenceError('canceled','Motion preview canceled.')
 /** Uses only the display controller. No capture, bridge, or helper dependency. */
 export class OverlayMotions {
@@ -28,10 +29,10 @@ export class OverlayMotions {
     const m=this.manager,o=this.overlay;await m.ensureModelManagement(signal)
     if(!o.capabilities.motions)throw preferenceError('unsupported','Motion playback requires the updated Live2D renderer; the keyboard fallback does not support it.')
     if(m.models){await m.models.ready(signal,{needAdapter:false});signal.throwIfAborted();return o.command({kind:'get-motions'},{signal})}
-    const p=m.store.value,chosen=(p.modelPath??o.defaultModel).replace(/\\/g,'/').replace(/\/$/,'').toLowerCase(),actual=o.runtime.modelPath?.replace(/\\/g,'/').toLowerCase()
+    const p=m.store.value,modelPath=requireModelSelection(p.modelPath,o.defaultModel),chosen=modelPath.replace(/\\/g,'/').replace(/\/$/,'').toLowerCase(),actual=o.runtime.modelPath?.replace(/\\/g,'/').toLowerCase()
     const pathMatches=actual?(chosen.endsWith('.model3.json')?actual===chosen:actual.startsWith(chosen+'/')):!this.loadedSource||this.loadedSource===this.source()
     const profileMatches=o.runtime.modelProfilePath===undefined?true:(o.runtime.modelProfilePath??null)===(p.profilePath??null)
-    if(!o.runtime.modelLoaded||!pathMatches||!profileMatches){await o.command({kind:'load-model',modelPath:p.modelPath??o.defaultModel,profilePath:p.profilePath},{signal});await o.command({kind:'commit-model'},{signal})}
+    if(!o.runtime.modelLoaded||!pathMatches||!profileMatches){await o.command({kind:'load-model',modelPath,profilePath:p.profilePath},{signal});await o.command({kind:'commit-model'},{signal})}
     signal.throwIfAborted();return o.command({kind:'get-motions'},{signal})
   }
   async refresh(signal){

@@ -669,24 +669,6 @@ window.__ModuleLoader__.load({
         ]),
       ])
     }
-    Object.assign(zh,{'local.watermarkTitle':'作者授权水印','local.watermarkHint':'仅对已获许可并验证过的清宵、达妮娅生效；原模型资源保持不变。','local.watermarkHidden':'水印已隐藏','local.watermarkDefault':'作者默认水印','local.watermarkHide':'隐藏水印','local.watermarkRestore':'恢复作者默认','local.watermarkUnsupported':'此模型没有获授权并验证的水印开关。','local.watermarkReason.not_authorized':'该模型版本不在本次许可和验证范围内。','local.watermarkReason.parameter_mismatch':'水印参数定义与已验证版本不一致。','local.watermarkReason.validation_failed':'水印开关验证未通过，保持作者默认。','local.watermarkOld':'需要 0.3.4 显示程序；重启宿主后生效。','local.watermarkBlocked':'请先结束动作、预览、调整或恢复已确认的输入状态。'})
-    Object.assign(en,{'local.watermarkTitle':'Authorized watermark','local.watermarkHint':'Only verified, author-permitted Qingxiao and Daniya models. Original assets stay unchanged.','local.watermarkHidden':'Watermark hidden','local.watermarkDefault':'Author default watermark','local.watermarkHide':'Hide watermark','local.watermarkRestore':'Restore author default','local.watermarkUnsupported':'No authorized and verified watermark switch for this model.','local.watermarkReason.not_authorized':'These model bytes are outside the authorized and verified list.','local.watermarkReason.parameter_mismatch':'Watermark parameter definition differs from the verified version.','local.watermarkReason.validation_failed':'Watermark validation failed; author defaults are retained.','local.watermarkOld':'Requires display runtime 0.3.4. Restart the Host to apply.','local.watermarkBlocked':'Finish motion, preview or adjustment, or restore confirmed input state.'})
-    function ModelWatermarkControls({manager,state,value,t}){
-      const catalog=value.adapterCatalog,w=catalog?.watermark,supported=value.capabilities?.watermark===true;
-      const busy=!!state.pending||value.loading||!!value.motion||!!value.previewing||value.watermarkBlocked;
-      const enabled=state.status==='ready'&&supported&&value.enabled&&value.modelLoaded&&!busy&&w?.supported;
-      return h('div',{className:'dgp-list',role:'group','aria-label':t('local.watermarkTitle')},[
-        h('h4',{key:'title',className:'dgp-groupTitle'},t('local.watermarkTitle')),
-        h('p',{key:'hint',className:'dgp-hint'},t('local.watermarkHint')),
-        h('p',{key:'status',className:'dgp-status','aria-live':'polite'},t(!supported?'local.watermarkOld':!catalog?'local.adapterUnread':!w?.supported?(w?.reason?'local.watermarkReason.'+w.reason:'local.watermarkUnsupported'):w.mode==='hidden'?'local.watermarkHidden':'local.watermarkDefault')),
-        supported&&!catalog?h('button',{key:'read',type:'button',className:'dgp-button',disabled:!value.enabled||busy,onClick:()=>void manager.command('refreshAdapter')},t('local.refreshAdapter')):null,
-        w?.supported?h('div',{key:'buttons',className:'dgp-localButtons'},[
-          h('button',{key:'hide',type:'button',className:'dgp-button',disabled:!enabled||w.mode==='hidden',onClick:()=>void manager.set('modelWatermark',{catalogGeneration:catalog.generation,mode:'hidden'})},t('local.watermarkHide')),
-          h('button',{key:'restore',type:'button',className:'dgp-button',disabled:!enabled||w.mode==='default',onClick:()=>void manager.set('modelWatermark',{catalogGeneration:catalog.generation,mode:'default'})},t('local.watermarkRestore')),
-        ]):null,
-        value.watermarkBlocked?h('p',{key:'blocked',className:'dgp-hint'},t('local.watermarkBlocked')):null,
-      ])
-    }
     function ModelLibraryControls({manager,state,value,t}) {
       const library=value.modelLibrary??{revision:0,items:[]},ready=state.status==='ready',busy=!!state.pending||value.loading||!!value.motion
       const canAdd=ready&&value.capabilities?.library&&!busy&&!value.libraryError
@@ -709,7 +691,7 @@ window.__ModuleLoader__.load({
             ]),
             h('div',{key:'actions',className:'dgp-localButtons'},[
               h('button',{key:'library-select-'+item.id,type:'button',className:'dgp-button',disabled:!ready||!value.enabled||!value.capabilities?.library||busy||!item.available||!!value.libraryError||showing,'aria-pressed':active,title:!value.enabled?t('local.disabled'):!item.available?t('local.libraryMissing'):undefined,onClick:()=>select(item)},t(showing?'local.libraryDisplaying':'local.libraryChoose')),
-              !item.builtin?h('button',{key:'library-remove-'+item.id,type:'button',className:'dgp-button',disabled:!ready||busy||!!value.libraryError||active&&!value.enabled,onClick:()=>remove(item)},t('local.libraryRemove')):null,
+              !item.builtin?h('button',{key:'library-remove-'+item.id,type:'button',className:'dgp-button',disabled:!ready||busy||!!value.libraryError,onClick:()=>remove(item)},t('local.libraryRemove')):null,
             ]),
           ])
         })),
@@ -747,7 +729,6 @@ window.__ModuleLoader__.load({
           importUnavailable?h('p',{key:'importLimit',className:'dgp-status'},t(importUnavailable)):(!value.capabilities?.model?h('p',{key:'importRecovery',className:'dgp-hint'},t('local.importRecovery')):null),
           h(ModelCandidateControls,{key:'modelCandidates',manager,state,value,t}),
           file('profile',Object.keys(globalAdapter(value).bindings??{}).length?t('local.globalProfile'):prefs.profilePath,[button('importProfile',Boolean(importUnavailable),importUnavailable),button('clearProfile',!enabled||(!prefs.profilePath&&!Object.keys(globalAdapter(value).bindings??{}).length)||processing)]),
-          h(ModelWatermarkControls,{key:'watermark',manager,state,value,t}),
           h('details',{key:'advanced',className:'dgp-libraryAdvanced',open:false},[
           h('summary',{key:'summary',className:'dgp-label'},t('local.libraryAdvanced')),
           h(ModelAdapterControls,{key:'adapter',manager,state,value,t}),
@@ -1061,7 +1042,7 @@ window.__ModuleLoader__.load({
       OverlayUIController,
       LocalRange,
       OverlayControls,
-      modelImportUnavailable, MotionControls, ModelCandidateControls, ModelAdapterControls, ModelLibraryControls, ModelWatermarkControls, LibraryCandidateControls,
+      modelImportUnavailable, MotionControls, ModelCandidateControls, ModelAdapterControls, ModelLibraryControls, LibraryCandidateControls,
       locales: { zh, en },
       parseField,
       inject: ['slots', 'locale', 'configForms'],

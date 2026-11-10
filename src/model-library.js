@@ -3,6 +3,7 @@ import {existsSync} from 'node:fs'
 import { dirname, join, resolve, normalize, isAbsolute, sep } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { preferenceError } from './overlay-preferences.js'
+import { defaultModelAvailable } from './model-selection.js'
 const digest = value => createHash('sha256').update(value).digest('hex')
 const canonical = value => typeof value === 'string' ? normalize(value).replaceAll('\\','/').toLowerCase() : null
 const hashId = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)
@@ -41,7 +42,7 @@ export class ModelLibrary {
    * or half-copied directory must not surface as a selectable model that can
    * never load, and must not be reported as the active one either.
    */
-  defaultAvailable(){return existsSync(join(this.manager.overlay.defaultModel,'img','standard','cat_model','deepseek.model3.json'))}
+  defaultAvailable(){return defaultModelAvailable(this.manager.overlay.defaultModel)}
   active() {
     const p=this.manager.store.value,o=this.manager.overlay
     if(!p.modelPath||same(p.modelPath,o.defaultModel))return this.defaultAvailable()?'builtin-default':null
@@ -172,17 +173,22 @@ export class ModelLibrary {
     const epoch=this.manager.cancelGeneration??0
     await this.ready;await this.refresh();this.checkEpoch(epoch);this.requireAlive();const m=this.manager
     if(m.busy||m.load||m.manualPreview||m.motions.active)throw error('busy','Another desktop operation is active.')
-    let unlock;m.busy='removingModel'
+    signal=m.signal(signal)
+    let unlock,resumeDisplay;m.busy='removingModel'
     try {
-      unlock=await this.lockIndex(m.signal(signal));this.checkEpoch(epoch);this.index=await this.read();await m.store.refresh()
+      unlock=await this.lockIndex(signal);this.checkEpoch(epoch);this.index=await this.read();await m.store.refresh()
       if(action.libraryRevision!==this.index.revision)throw error('library_conflict','The model library changed; refresh and retry.')
       if(action.revision!==m.store.revision)throw error('preference_conflict','Display preferences changed; refresh and retry.')
       const item=this.index.items.find(i=>i.id===action.modelId);if(!item)throw error('invalid_model_selection','The default or missing model cannot be removed.')
-      if(this.active()===item.id)await this.select({...action,modelId:'builtin-default'},signal,{heldLock:true,allowBusy:true})
+      if(this.active()===item.id)resumeDisplay=await m.clearModelSelection(action.revision,signal)
       m.busy='removingModel';this.checkEpoch(epoch);aborted(signal)
       await this.write(this.index.items.filter(i=>i.id!==item.id),action.libraryRevision,{signal,heldLock:true})
-      if(!this.index.items.some(i=>i.bundleId===item.bundleId)&&!same(m.overlay.runtime.modelSourcePath,this.source(item)))await this.removeTree(join(this.root,item.bundleId))
-    }finally{try{await unlock?.()}finally{if(m.busy==='removingModel')m.busy=null}}
+      // A package can contain several library entries: retain shared bytes and a
+      // source still used by a live renderer. Stopped renderer metadata is not a lease.
+      const rendered=m.overlay.runtime.modelLoaded===true&&same(m.overlay.runtime.modelSourcePath,this.source(item))
+      if(!this.index.items.some(i=>i.bundleId===item.bundleId)&&!rendered)await this.removeTree(join(this.root,item.bundleId))
+      m.lastError=null
+    }finally{try{await unlock?.()}finally{if(m.busy==='removingModel')m.busy=null;await resumeDisplay?.()}}
   }
   async restore(signal) {
     const epoch=this.manager.cancelGeneration??0

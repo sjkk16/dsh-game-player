@@ -10,6 +10,7 @@ import { ModelLibrary } from './model-library.js'
 import { desktopExecutable, desktopLaunch } from './desktop-runtime.js'
 import { validateGlobalAdapter, mergeGlobalAdapter, resolveGlobalAdapter, confirmsGlobalAdapter, profileGlobalBindings } from './live2d/global-adapter.js'
 import { validateMotionAction } from './live2d/motions.js'
+import { defaultModelAvailable, requireModelSelection } from './model-selection.js'
 
 export const OVERLAY_ACTIONS = Object.freeze([
   'show', 'hide', 'beginAdjust', 'endAdjust', 'resetLayout', 'reloadModel', 'retryDisplay',
@@ -80,14 +81,12 @@ export class OverlayManagement {
     if(native&&o.capabilities.management&&!this.busy&&!this.store.writing&&o.preferencesSentRevision!==this.store.revision)await o.syncPreferences()
     const management = native ? o.capabilities.management === true : o.useDesktop && existsSync(o.desktop)
     this.models.snapshot();await this.models.checkProof();
-    if(native&&o.capabilities.watermark&&o.runtime.modelLoaded&&!this.busy&&!this.load){try{const gate=await o.command({kind:'get-watermark-gate',token:o.runtime.modelToken});this.watermarkNativeBlocked=gate.safe!==true}catch{this.watermarkNativeBlocked=true}}
     const value = {
       ...this.store.snapshot(), enabled: o.enabled,
       ...o.runtime, renderer: o.renderer ?? o.runtime.renderer,
       phase: this.busy ?? o.runtime.phase, loading: this.load !== null || o.runtime.loading === true || o.runtime.phase === 'starting',
       ...this.models.snapshot(), ...this.motions.snapshot(), ...this.library.snapshot(), previewing: this.manualPreview !== null, error: this.lastError ?? o.runtime.error ?? o.lastError ?? null,
-      watermarkBlocked:this.watermarkNativeBlocked===true||['unknown','locked','releasing','syncing'].includes(o.state?.status)||o.runtime.adjusting===true,
-      capabilities: { watermark:native&&o.capabilities.watermark===true, library:this.utilitySupportsLibrary&&existsSync(o.desktop), confirmedVisibility:native?o.capabilities.confirmedVisibility===true:this.utilitySupportsLibrary, archives: native?o.capabilities.archives===true:this.canDiscover(), adaptation:native?o.capabilities.adaptation===true:this.canDiscover(), handStyles:native?o.capabilities.handStyles===true:this.canDiscover(), management, model: native?o.capabilities.model===true:management, picker: existsSync(o.desktop), preview: o.enabled && this.canPreview(), motions: native?o.capabilities.motions===true:management, motionPreview:o.enabled&&this.canPreview()&&o.captureCount===0 },
+      capabilities: { library:this.utilitySupportsLibrary&&existsSync(o.desktop), confirmedVisibility:native?o.capabilities.confirmedVisibility===true:this.utilitySupportsLibrary, archives: native?o.capabilities.archives===true:this.canDiscover(), adaptation:native?o.capabilities.adaptation===true:this.canDiscover(), handStyles:native?o.capabilities.handStyles===true:this.canDiscover(), management, model: native?o.capabilities.model===true:management, picker: existsSync(o.desktop), preview: o.enabled && this.canPreview(), motions: native?o.capabilities.motions===true:management, motionPreview:o.enabled&&this.canPreview()&&o.captureCount===0 },
     }
     const signature=JSON.stringify(value);if(signature!==this.stateSignature){this.stateSignature=signature;this.stateRevision++}
     return {...value,stateRevision:this.stateRevision,stateGeneration:this.stateGeneration}
@@ -144,7 +143,8 @@ export class OverlayManagement {
   }
   canDiscover() { return this.utility.supportsDiscovery===true||this.utilitySupportsDiscovery&&(this.overlay.capabilities.archives===true || this.overlay.desktop===desktopExecutable()&&existsSync(this.overlay.desktop)) }
   modelRequest(next,extra={}) {
-    return {kind:'load-model',modelPath:next.modelPath??this.overlay.defaultModel,profilePath:null,modelEntry:next.modelEntry??null,adapter:{},overrides:{},watermarks:next.modelWatermarks??{},...extra}
+    const modelPath=requireModelSelection(next.modelPath,this.overlay.defaultModel)
+    return {kind:'load-model',modelPath,profilePath:null,modelEntry:next.modelEntry??null,adapter:{},overrides:{},...extra}
   }
   async readProfile(path,signal){
     validatePreferencePatch({profilePath:path});signal?.throwIfAborted()
@@ -197,31 +197,26 @@ export class OverlayManagement {
     // Nothing selected and no built-in pet on disk: asking the display to load
     // would fail its startup handshake and push the whole overlay back to the
     // PowerShell keyboard. Start without a model and let the panel stay usable.
-    if(!this.store.value.modelPath&&!existsSync(join(this.overlay.defaultModel,'img','standard','cat_model','deepseek.model3.json')))return
+    if(!this.store.value.modelPath&&!defaultModelAvailable(this.overlay.defaultModel))return
     if(this.store.value.globalAdapter===null)return this.applyPreferences({globalAdapter:null},this.store.revision,signal)
     try{const prepared=await this.stageModel(structuredClone(this.store.value),signal);await this.overlay.command({kind:'commit-model'},{signal});this.models.accept(prepared)}
     catch(error){await this.overlay.command({kind:'cancel-load'}).catch(()=>{});throw error}
   }
   async updatePreferences(patch,revision,signal) {
-    const parsed=validatePreferenceRequest(patch),validated={...parsed};delete validated.modelAdapter;delete validated.modelWatermark
-    if(parsed.modelWatermark){
-      this.requireEnabled();if(this.busy||this.load||this.manualPreview||this.motions.active||this.overlay.runtime.adjusting||['unknown','locked','releasing','syncing'].includes(this.overlay.state?.status))throw preferenceError('busy','Finish current activity or restore confirmed input state before changing the watermark.');
-      if(this.overlay.capabilities.watermark!==true)throw preferenceError('unsupported','Watermark control requires the 0.3.4 renderer.');this.models.snapshot();if(this.models.cache)await this.models.assertProof(this.models.cache.sourceProof);Object.assign(validated,this.models.watermarkPatch(parsed.modelWatermark));
-      const gate=await this.overlay.command({kind:'get-watermark-gate',token:this.models.seenToken},{signal:this.signal(signal)});if(!gate.safe||gate.modelToken!==this.models.seenToken)throw preferenceError('busy','Renderer input state is frozen or the model changed.');
-    }
+    const parsed=validatePreferenceRequest(patch),validated={...parsed};delete validated.modelAdapter
     if(['modelPath','profilePath','keyboardImage'].some(key=>key in validated))throw preferenceError('invalid_preferences','Use the import/clear commands to change local resource paths.')
     if(parsed.modelAdapter){
       this.requireEnabled();if(this.busy||this.load||this.manualPreview||this.motions.active)throw preferenceError('busy','Finish or cancel the current display operation first.')
       this.models.snapshot();if(this.models.cache)await this.models.assertProof(this.models.cache.sourceProof)
       Object.assign(validated,this.models.adapterPatch(parsed.modelAdapter))
     }
-    return this.applyPreferences(validated,revision,this.signal(signal),{strictAdapter:!!parsed.modelAdapter,strictWatermark:!!parsed.modelWatermark})
+    return this.applyPreferences(validated,revision,this.signal(signal),{strictAdapter:!!parsed.modelAdapter})
   }
-  async applyPreferences(patch,revision,signal,{strictAdapter=false,strictWatermark=false,showAfterCommit=false,profileProof=[],inputBindings}={}) {
+  async applyPreferences(patch,revision,signal,{strictAdapter=false,showAfterCommit=false,profileProof=[],inputBindings}={}) {
     signal??=this.signal();signal.throwIfAborted()
     const o=this.overlay,wasRunning=o.ready&&!o.dead,activity=o.activity
     if(inputBindings===undefined&&!showAfterCommit&&patch.globalAdapter!==null&&'globalAdapter'in patch&&Object.entries(patch).every(([key,v])=>JSON.stringify(v)===JSON.stringify(this.store.value[key]))){await this.models.assertProof(profileProof);return this.store.update(patch,revision)}
-    const modelChange=['modelPath','profilePath','modelEntry','modelOverrides','modelWatermarks','globalAdapter'].some(key=>key in patch)
+    const modelChange=['modelPath','profilePath','modelEntry','modelOverrides','globalAdapter'].some(key=>key in patch)
     let staged=false,committed=false,prepared,releaseVisibility,shown=false,displayIntent
     const previousDisplay={activated:o.activated,state:o.state,userHidden:o.runtime.userHidden,view:o.view??o.runtime.view??'auto'}
     if(modelChange){
@@ -233,12 +228,10 @@ export class OverlayManagement {
         if(modelChange){
           await this.ensureModelManagement(signal)
           if(next.modelPath?.toLowerCase().endsWith('.zip')&&!o.capabilities.archives)throw preferenceError('unsupported','ZIP models require the 0.2.5 renderer.')
-          if(strictWatermark&&o.capabilities.watermark!==true)throw preferenceError('unsupported','Watermark control requires the 0.3.4 renderer.');
           if(strictAdapter&&!o.capabilities.adaptation)throw preferenceError('unsupported','This renderer cannot validate parameter or hand-style changes.')
           staged=true
-          prepared=await this.stageModel(next,signal,strictWatermark?{preserveInputTimeline:true}:{},inputBindings);signal.throwIfAborted()
+          prepared=await this.stageModel(next,signal,{},inputBindings);signal.throwIfAborted()
           await this.models.assertProof(profileProof)
-          if(strictWatermark){const w=prepared?.adapter?.watermark,r=next.modelWatermarks?.[prepared?.modelKey];if(!w?.supported||w.mode!==(r?.mode??'default')||r&&w.mocHash!==r.mocHash)throw preferenceError('invalid_watermark','Renderer did not confirm the requested watermark mode.')}
 
         }else if(o.ready&&!o.dead){
           if(!o.capabilities.management)throw preferenceError('unsupported','The keyboard fallback cannot apply these preferences live.')
@@ -248,7 +241,7 @@ export class OverlayManagement {
           rollback:async()=>{
             if(staged)await o.command({kind:'cancel-load'}).catch(()=>{})
             if(staged&&o.ready&&!o.dead&&(committed||prepared?.modelToken&&o.runtime.modelToken===prepared.modelToken)){
-              try{await this.stageModel(structuredClone(previous),this.lifetime.signal,strictWatermark?{preserveInputTimeline:true,restoreWatermark:true}:{});await o.command({kind:'commit-model'},{signal:this.lifetime.signal});this.models.invalidate();this.motions.invalidate()}catch(error){this.lastError='Configuration restored; renderer recovery failed: '+error.message}
+              try{await this.stageModel(structuredClone(previous),this.lifetime.signal,{});await o.command({kind:'commit-model'},{signal:this.lifetime.signal});this.models.invalidate();this.motions.invalidate()}catch(error){this.lastError='Configuration restored; renderer recovery failed: '+error.message}
             }
             if(o.ready&&o.capabilities.management)await o.command({kind:'preferences',...this.store.snapshot()}).catch(()=>{})
              if(showAfterCommit&&(displayIntent===undefined||o.activity===displayIntent)){o.activated=previousDisplay.activated;o.state=previousDisplay.state;o.runtime.userHidden=previousDisplay.userHidden;await o.setViewIntent?.(previousDisplay.view);o.changed();if(o.ready&&o.capabilities.management)await o.command({kind:'control',action:previousDisplay.activated&&!previousDisplay.userHidden?'show':'hide'}).catch(()=>{})}
@@ -271,6 +264,31 @@ export class OverlayManagement {
       throw error
     }finally{
       if(modelChange){if(signal.aborted&&staged)await o.command({kind:'cancel-load'}).catch(()=>{});this.load=null;this.busy=null;try{if(!shown){if(showAfterCommit&&!wasRunning&&displayIntent!==undefined&&o.activity===displayIntent)await o.stopDisplay();else await this.retireTemporary(wasRunning,activity)}}finally{o.deferModelStartup--;releaseVisibility?.()}}
+    }
+  }
+  /** Remove a selection without trying to load a missing default or another library model. */
+  async clearModelSelection(revision, signal) {
+    signal=this.signal(signal);signal.throwIfAborted()
+    if(this.load||this.manualPreview||this.motions.active)throw preferenceError('busy','Finish or cancel the current display operation first.')
+    const o=this.overlay,wasRunning=!!o.starting||!!o.child&&!o.dead,activity=o.activity,activated=o.activated,userHidden=o.runtime.userHidden===true
+    await this.store.update({modelPath:null,modelEntry:null,profilePath:null,view:'keyboard'},revision,async()=>({
+      commit:async()=>{
+        signal.throwIfAborted()
+        await o.stopDisplay('Model selection cleared.')
+        this.models.cancelSelection();this.models.invalidate();this.motions.invalidate();this.motions.loadedSource=null
+        await o.setViewIntent('keyboard')
+        this.lastError=null;o.lastError=null
+      },
+    }),{forcePrepare:true})
+    // Restart only a display that was already running; never start the input bridge.
+    // The library invokes this after its lock is released and file removal finishes.
+    return async()=>{
+      if(!wasRunning||!o.enabled||o.closed||signal.aborted)return
+      try {
+        if(o.activity===activity){o.activated=activated;o.runtime.userHidden=userHidden}
+        await o.start({hidden:!o.activated||o.runtime.userHidden===true,deferModel:true})
+        o.changed()
+      }catch(error){this.lastError='Model deselected; keyboard display unavailable: '+error.message;o.warn?.(this.lastError)}
     }
   }
   async pick(action, signal) {

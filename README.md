@@ -4,7 +4,7 @@
 
 > **这不是独立游戏程序，也不是通用的自主游戏代理。** 插件依赖 DeepSeek Harness 提供工具注册、附件、审批和客户端 UI 服务。直接运行 `node index.js` 不会启动可用的宿主。项目不包含角色模型、贴图、动作或音频。
 
-当前版本：**0.3.7**。GitHub 仓库仅保存源码；预编译桌面运行时在 [Releases](https://github.com/sjkk16/dsh-game-player/releases) 提供。
+当前版本：**0.3.8**。GitHub 仓库仅保存源码；预编译桌面运行时在 [Releases](https://github.com/sjkk16/dsh-game-player/releases) 提供。
 
 ## 功能与安全边界
 
@@ -32,19 +32,19 @@
 
 ### 安装步骤
 
-1. 从 [v0.3.7 Release](https://github.com/sjkk16/dsh-game-player/releases/tag/v0.3.7) 下载 `dsh-game-player-v0.3.7-windows.zip` 和 `SHA256SUMS.txt`。
+1. 从 [v0.3.8 Release](https://github.com/sjkk16/dsh-game-player/releases/tag/v0.3.8) 下载 `dsh-game-player-v0.3.8-windows.zip` 和 `SHA256SUMS.txt`。
 2. 在 PowerShell 中用 `Get-FileHash -Algorithm SHA256` 计算 ZIP 的哈希，与校验文件比较后再解压。
 3. 在解压后的 `dsh-game-player` 目录安装生产依赖：
 
    ```powershell
-   pnpm install --prod --frozen-lockfile
+   pnpm install --prod --frozen-lockfile --ignore-scripts
    ```
 
 4. 按所用 DeepSeek Harness 版本提供的本地插件/bundle 加载方式，选择此解压目录。包标识为 `@local/dsh-game-player`，插件行标识为 `game-player`；入口和补丁已由包清单声明。
 5. 保留 `cordis.patch.yml` 中的 `requireApproval: true`。不同宿主版本的安装入口可能不同；本项目不假定未经验证的宿主 CLI 命令。
 6. 需要 Live2D 时，在插件的模型管理界面导入你拥有使用权限的模型。模型文件不会随项目分发。
 
-**不要改变运行时相对目录：** `runtime/desktop-0.3.7/` 必须与插件入口处于同一解压根目录下。ZIP 不包含依赖目录，依赖安装仍是必要步骤。
+**不要改变运行时相对目录：** `runtime/desktop-0.3.8/` 必须与插件入口处于同一解压根目录下。ZIP 不包含依赖目录，依赖安装仍是必要步骤。包内的 `pnpm-workspace.yaml` 使用 hoisted/copy 配置，依赖安装后为实体目录，便于复制；请不要遗漏这个配置文件。生产依赖安装不运行生命周期脚本。
 
 ## 从源码开发或构建
 
@@ -54,7 +54,7 @@ cd dsh-game-player
 npm test
 npm run test:pack
 # 要在宿主中加载源码插件，再安装生产依赖：
-pnpm install --prod --frozen-lockfile
+pnpm install --prod --frozen-lockfile --ignore-scripts
 ```
 
 源码仓库不包含预编译运行时、Live2D SDK 或模型。若要直接使用现成运行时，优先下载 Release 的完整分发包。
@@ -85,18 +85,25 @@ pnpm run test:release
 
 | 命令 | 检查内容 |
 | --- | --- |
-| `npm test` / `pnpm test` / `pnpm run test:safe` | JS/MJS 语法、字面量本地引用、JSON、必需源码及常见敏感内容模式；不加载插件、不截图、不发送输入 |
+| `npm test` / `pnpm test` / `pnpm run test:safe` | JS/MJS 语法、本地字面量引用、JSON、敏感模式和隔离回归测试；不启动宿主、不截图、不发送输入 |
+| `npm run test:library` | 20 个隔离模型库删除场景及删除按钮确认行为；不接触真实模型库 |
 | `npm run test:pack` / `pnpm run test:pack` | npm 源码打包预览、必需文件及禁止文件；源码包不得包含运行时 |
 | `npm run test:release` / `pnpm run test:release` | 含运行时的打包预览、托管/原生依赖、13 个着色器、许可证、资源一致性及已记录的构建哈希 |
 
-历史测试文件和历史报告不在当前源码中，因此已移除失效命令。上述检查是**静态和打包检查，不是恢复后的完整功能测试**；字面量引用扫描不保证发现所有动态路径，敏感内容扫描也不能保证不存在任何秘密。
+历史测试文件和历史报告不在当前源码中，因此已移除失效命令。上述检查是**静态、隔离回归和打包检查，不是恢复后的完整功能测试**；字面量引用扫描不保证发现所有动态路径，敏感内容扫描也不能保证不存在任何秘密。
 
-首个 GitHub Release 使用现有预编译运行时，未重新构建、未执行真实键鼠或完整视觉验收。Release 另附 ZIP SHA-256，便于检查下载完整性。
+0.3.8 已删除作者授权水印开关，修复默认模型缺失、复制目录后依赖入口失效及模型库删除问题；桌面运行时已重新构建。详细变更见 [更新记录](CHANGELOG.md)。未执行真实键鼠或完整视觉验收。
+
+项目不自带示例模型。未选择模型时保持键鼠显示，不自动加载不存在的默认目录；请从模型库选择已有模型或导入获授权的模型。
 
 ## 目录与许可证
 
 - 插件入口、`src/`、`locale/` 和补丁：宿主插件及资源。
 - `desktop/`：桌面显示组件源码；`scripts/`：构建及安全检查脚本。
-- `runtime/desktop-0.3.7/`：仅存在于 Release 分发包或本地构建输出。
+- `runtime/desktop-0.3.8/`：仅存在于 Release 分发包或本地构建输出。
 
-项目自身源码采用 [MIT License](LICENSE)。第三方组件及外部模型不被重新授权为 MIT；详见 [第三方声明](THIRD_PARTY_NOTICES.md) 和分发包中的 `runtime/desktop-0.3.7/licenses/`。Live2D Core 适用其专有许可证，框架和着色器适用各自原始许可证；适用的商业发布义务仍由分发者承担。
+项目自身源码采用 [MIT License](LICENSE)。第三方组件及外部模型不被重新授权为 MIT；详见 [第三方声明](THIRD_PARTY_NOTICES.md) 和分发包中的 `runtime/desktop-0.3.8/licenses/`。Live2D Core 适用其专有许可证，框架和着色器适用各自原始许可证；适用的商业发布义务仍由分发者承担。
+
+### 模型库删除
+
+可以删除库里最后一个或当前选中的模型。删除当前模型会先解除选择、停止旧显示并退回键鼠视图；无需存在默认示例模型，也不会自动换成其他模型。删除只针对模型库管理的副本，不修改原始导入文件；仍被其他条目共用的资源包会保留。面板停用时也可删除，正在加载、预览或播放动作时须先结束该操作。删除按钮仍要求确认。

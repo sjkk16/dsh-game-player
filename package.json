@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-game-player",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "private": true,
   "type": "module",
   "description": "Give the model a virtual mouse and keyboard plus a live view of the screen, so it can play a windowed game.",
@@ -24,6 +24,8 @@
     "locale/*.json",
     "icon.svg",
     "README.md",
+    "CHANGELOG.md",
+    "pnpm-workspace.yaml",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "desktop/*.cs",
@@ -36,13 +38,13 @@
     "desktop/web/*.css",
     "scripts/*.mjs",
     "scripts/sdk-files.json",
-    "runtime/desktop-0.3.7/*.exe",
-    "runtime/desktop-0.3.7/*.dll",
-    "runtime/desktop-0.3.7/*.json",
-    "runtime/desktop-0.3.7/web/**/*",
-    "runtime/desktop-0.3.7/profiles/*.json",
-    "runtime/desktop-0.3.7/licenses/*",
-    "runtime/desktop-0.3.7/runtimes/**/native/*.dll"
+    "runtime/desktop-0.3.8/*.exe",
+    "runtime/desktop-0.3.8/*.dll",
+    "runtime/desktop-0.3.8/*.json",
+    "runtime/desktop-0.3.8/web/**/*",
+    "runtime/desktop-0.3.8/profiles/*.json",
+    "runtime/desktop-0.3.8/licenses/*",
+    "runtime/desktop-0.3.8/runtimes/**/native/*.dll"
   ],
   "dsh": {
     "bundle": {
@@ -62,7 +64,9 @@
     "test:safe": "node scripts/test.mjs",
     "test:pack": "node scripts/check-package.mjs",
     "test:release": "node scripts/check-package.mjs --runtime",
-    "build:live2d": "node scripts/build-live2d.mjs"
+    "build:live2d": "node scripts/build-live2d.mjs",
+    "test:regression": "node scripts/feature-regression.mjs",
+    "test:library": "node scripts/model-library-regression.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.12"

@@ -165,7 +165,6 @@ export class OverlayController {
           if(typeof message.state.modelCapable==='boolean')this.capabilities.model=message.state.modelCapable
           if(typeof message.state.motionCapable==='boolean')this.capabilities.motions=message.state.motionCapable
           if(typeof message.state.adaptationCapable==='boolean')this.capabilities.adaptation=message.state.adaptationCapable
-          if(typeof message.state.watermarkCapable==='boolean')this.capabilities.watermark=message.state.watermarkCapable
           if(typeof message.state.archiveCapable==='boolean')this.capabilities.archives=message.state.archiveCapable
           if(typeof message.state.adaptationCapable==='boolean')this.capabilities.handStyles=message.state.adaptationCapable
           if(message.state.modelLoaded===false&&message.state.error)this.onMotionEvent?.({kind:'unavailable'})
@@ -292,7 +291,7 @@ export class OverlayController {
     for(const {reject} of this.pending.values())reject(new Error(reason))
     this.pending.clear();if(this.child===child)this.child=undefined
     this.buffer='';this.blocked=false;this.dead=true;this.ready=false;this.stopped=false
-    this.activated=false;this.renderer=undefined;this.runtime={...this.runtime,phase:'stopped',renderer:null,modelLoaded:false,visible:false,adjusting:false,loading:false}
+    this.activated=false;this.renderer=undefined;this.runtime={...this.runtime,phase:'stopped',renderer:null,modelLoaded:false,visible:false,adjusting:false,loading:false,modelName:null,modelPath:null,modelSourcePath:null,modelEntry:null,modelKey:null,modelToken:null,modelProfilePath:null,sourceProof:null,adapterCatalog:null,motionSignature:null,motionCatalog:null,error:null,errorCode:null,stage:null}
   }
   syncCapture() {
     const run=async()=>{

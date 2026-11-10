@@ -50,7 +50,7 @@ internal sealed partial class PetWindow {
                     case "preferences": ApplyPreferences(data); Ack(id); break;
                     case "load-model":
                         if (loading) throw new InvalidOperationException("A model is already loading");
-                        _ = BeginLoad(data["modelPath"]!.GetValue<string>(), data["profilePath"]?.GetValue<string>(), id, data["modelEntry"]?.GetValue<string>(), data["adapter"] as JsonObject, data["overrides"] as JsonObject, data["profileOverride"]?.GetValue<bool>() == true, data["watermarks"] as JsonObject, data["preserveInputTimeline"]?.GetValue<bool>()==true, data["restoreWatermark"]?.GetValue<bool>()==true); break;
+                        _ = BeginLoad(data["modelPath"]!.GetValue<string>(), data["profilePath"]?.GetValue<string>(), id, data["modelEntry"]?.GetValue<string>(), data["adapter"] as JsonObject, data["overrides"] as JsonObject, data["profileOverride"]?.GetValue<bool>() == true); break;
                     case "commit-model":
                         if (pendingPackage == null || loading) throw new InvalidOperationException("No validated model to commit");
                         commitReply = id; loading = true; loadDeadline = DateTime.UtcNow.AddSeconds(25); PublishStatus(); Post(new JsonObject { ["kind"] = "commit", ["token"] = pendingPackage.Token }); break;
@@ -66,7 +66,6 @@ internal sealed partial class PetWindow {
                             default: throw new InvalidDataException("Unknown desktop control");
                         }
                         Ack(id); break;
-                    case "get-watermark-gate": if(package==null||data["token"]?.GetValue<string>()!=package.Token)throw new InvalidOperationException("Model generation changed");Post(data);break;
                     case "get-adapter": case "get-motions": case "play-motion": case "stop-motion": MotionCommand(data); break;
                     case "qa-prepare": if(!qa||!qaInteractive)throw new InvalidOperationException("Private canvas QA only"); Post(new JsonObject{["kind"]="prepare-show",["id"]=id,["ticket"]=0,["token"]=package?.Token,["state"]=data["state"]?.DeepClone()});break;
                     case "qa-cursor-channel": case "qa-cursor-pressure": if(!qa||!qaInteractive)throw new InvalidOperationException("Private canvas QA only"); CursorQaCommand(data); Ack(id); break;
@@ -87,14 +86,13 @@ internal sealed partial class PetWindow {
             if (webReady) Post(update); keyboard?.EmbeddedState(update.ToJsonString()); VisibleGate();
         }
     }
-    async Task BeginLoad(string selection, string? profile, string? reply = null, string? entry = null, JsonObject? adapter = null, JsonObject? overrides = null, bool explicitProfile = false, JsonObject? watermarks = null, bool preserveInput = false, bool restoreWatermark = false) {
+    async Task BeginLoad(string selection, string? profile, string? reply = null, string? entry = null, JsonObject? adapter = null, JsonObject? overrides = null, bool explicitProfile = false) {
         if (!webReady || rendererDisposed) { Ack(reply, false, errorMessage ?? "WebView2 is unavailable; retry the display after installing its runtime."); return; }
         CancelLoad(); long ticket = ++loadTicket; loading = true; loadReply = reply; loadDeadline = DateTime.UtcNow.AddSeconds(25); errorMessage = errorCode = errorStage = null; VisibleGate();
         try {
-            var imported = await Task.Run(() => ModelPackage.Load(selection, profile, entry, adapter, overrides ?? settings.ModelOverrides, explicitProfile, watermarks ?? settings.ModelWatermarks));
+            var imported = await Task.Run(() => ModelPackage.Load(selection, profile, entry, adapter, overrides ?? settings.ModelOverrides, explicitProfile));
             if (dead || ticket != loadTicket) return;
             pendingPackage = imported; imported.Manifest["token"] = imported.Token; imported.Manifest["qa"] = qa;
-            if(preserveInput){imported.Manifest["preserveInputTimeline"]=true;imported.Manifest["watermarkOrigin"]=package?.Token;imported.Manifest["restoreWatermark"]=restoreWatermark;}
             Post(new JsonObject { ["kind"] = "load", ["manifest"] = imported.Manifest.DeepClone() });
         } catch (Exception e) { if (ticket == loadTicket) LoadFailed("Cannot load model: " + e.Message); }
     }
@@ -122,8 +120,9 @@ internal sealed partial class PetWindow {
             if (kind == "web-ready") {
                 if (!startup.Pending || webReady) return;
                 startup.Complete(); webReady = true;
-                if (deferModel) { loading = false; Ready(); VisibleGate(); }
-                else await BeginLoad(settings.ModelPath ?? defaultModel, settings.ProfilePath, entry: settings.ModelEntry);
+                var selected = ModelLoadSelection.Resolve(settings.ModelPath, defaultModel);
+                if (deferModel || selected == null) { loading = false; Ready(); VisibleGate(); }
+                else await BeginLoad(selected, settings.ProfilePath, entry: settings.ModelEntry);
             }
             else if (kind == "model-ready") {
                 if (pendingPackage == null || message["token"]?.GetValue<string>() != pendingPackage.Token) return;
@@ -135,14 +134,12 @@ internal sealed partial class PetWindow {
             } else if (kind == "model-committed") {
                 if (pendingPackage == null || message["token"]?.GetValue<string>() != pendingPackage.Token) return;
                 package = pendingPackage; pendingPackage = null; modelMotions = pendingModelMotions; pendingModelMotions = null; modelAdapter = pendingModelAdapter; pendingModelAdapter = null; modelReady = true; loading = false; errorMessage = errorCode = errorStage = null;
-                if (state != null && package.Manifest["preserveInputTimeline"]?.GetValue<bool>()!=true) Post(state); Place(); Ready(); VisibleGate(); Ack(commitReply); commitReply = null;
+                if (state != null) Post(state); Place(); Ready(); VisibleGate(); Ack(commitReply); commitReply = null;
                 if (qa && !qaInteractive) QaNext();
             } else if (kind == "model-error") {
                 string? token = message["token"]?.GetValue<string>(), reason = message["error"]?.GetValue<string>();
                 if (token == null || token == package?.Token) RuntimeFailed(reason ?? "Renderer failed", "renderer_failed", "model");
                 else if (token == pendingPackage?.Token) LoadFailed(reason ?? "Model failed");
-            } else if(kind=="watermark-gate"){if(package==null||message["token"]?.GetValue<string>()!=package.Token){Ack(message["id"]?.GetValue<string>(),false,"Expired watermark gate");return;}Output(new{kind="ack",id=message["id"]?.GetValue<string>(),ok=true,modelToken=package.Token,safe=message["safe"]?.GetValue<bool>()==true});
-            } else if(kind=="watermark-commit-rejected"){Ack(commitReply,false,"Input state became frozen or watermark model changed during preload");commitReply=null;CancelLoad();PublishStatus();
             } else if (kind == "cursor-gaze-ack") { CursorGazeAck(message);
             } else if (kind == "cursor-gaze-progress") { CursorGazeProgress(message);
             } else if (kind == "show-ready") { ShowReady(message);

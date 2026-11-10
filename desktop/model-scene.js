@@ -11,7 +11,6 @@ import { resolveAdapter,validatePose } from '../src/live2d/model-adapter.js'
 import { HandImageCache } from '../src/live2d/hand-cache.js'
 import { validatePhysics } from '../src/live2d/physics-validation.js'
 import { VisualState, PhysicsOutputState } from './frame-state.js'
-import {WATERMARK_ID,watermarkCapability,verifyWatermarkCore} from '../src/live2d/watermark.js'
 let started=false
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,Number.isFinite(v)?v:a))
 class Pet extends CubismUserModel {
@@ -59,13 +58,9 @@ export class ModelScene {
    s.handCache=new HandImageCache(manifest.hands??[],image,{onReady:()=>s.onHandReady()});s.hands=manifest.hands??[]
    signal.throwIfAborted();s.resetFrame();c.update();s.bounds=s.drawableBounds();s.baseBounds={...s.bounds}
    s.validateEffects();s.calibrateCursorHandAxes();s.cursorHandBounds=s.measureCursorHandBounds();if(manifest.layout.autoFrame)s.bounds={...s.cursorHandBounds};s.baseBounds={...s.bounds};await s.loadMotions(signal);s.resetFrame();c.update();
-    s.watermark=verifyWatermarkCore(c,watermarkCapability(s.mocHash,s.parameters),s.parameterIndices[WATERMARK_ID]);
-    const wanted=manifest.watermarkPreference;if(wanted&&(!s.watermark.supported||wanted.mode!=='hidden'||wanted.mocHash!==s.mocHash||Object.keys(wanted).length!==2))throw Error('Saved watermark preference no longer matches validated model content');
-    if(wanted)s.watermark.mode='hidden';s.applyWatermark();c.update();return s
+    c.update();return s
   }catch(e){s.release();throw e}
  }
-  applyWatermark(){if(this.watermark?.supported)this.model.core().setParameterValueByIndex(this.parameterIndices[WATERMARK_ID],this.watermark.mode==='hidden'?1:0)}
-  watermarkReport(){const {supported=false,mocHash=this.mocHash,mode='default',reason='not_authorized'}=this.watermark??{};return {supported,mocHash,mode,reason}}
  apply(values){const c=this.model.core();for(const id in values){const p=this.parameters[id];if(p)c.setParameterValueByIndex(this.parameterIndices[id],clamp(Number.isFinite(values[id])?values[id]:p.default,p.min,p.max))}}
  clampParameters(){const c=this.model.core();for(const [id,index,p]of this.parameterRecords){const value=c.getParameterValueByIndex(index);if(!Number.isFinite(value))throw Error('Model produced a non-finite parameter: '+id);if(value<p.min||value>p.max)c.setParameterValueByIndex(index,clamp(value,p.min,p.max))}}
  snapshot(){const v=Object.create(null);for(const id of Object.keys(this.parameters))v[id]=this.model.core().getParameterValueByIndex(this.parameterIndices[id]);return v}
@@ -76,7 +71,7 @@ export class ModelScene {
  resetFrame(){this.baseFrame.restore(this.model.core());for(const id of this.poseIds)this.model.core().setPartOpacityByIndex(this.parts[id].index,this.poseOpacityState[id]??this.parts[id].default)}
  drawableBounds(){const c=this.model.core();let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;for(let i=0;i<c.getDrawableCount();i++)if(c.getDrawableOpacity(i)>0){const v=c.getDrawableVertices(i);for(let j=0;j<v.length;j+=2){minX=Math.min(minX,v[j]);maxX=Math.max(maxX,v[j]);minY=Math.min(minY,v[j+1]);maxY=Math.max(maxY,v[j+1])}}if(![minX,minY,maxX,maxY].every(Number.isFinite)||maxX<=minX||maxY<=minY)throw Error('Model has no drawable bounds');return {minX,minY,maxX,maxY}}
  withFrame(size,run){const gl=this.gl,previous=gl.getParameter(gl.FRAMEBUFFER_BINDING),frame=gl.createFramebuffer(),texture=gl.createTexture();try{gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,size,size,0,gl.RGBA,gl.UNSIGNED_BYTE,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.bindFramebuffer(gl.FRAMEBUFFER,frame);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Private validation framebuffer unavailable');return run(frame)}finally{gl.bindFramebuffer(gl.FRAMEBUFFER,previous);gl.deleteFramebuffer(frame);gl.deleteTexture(texture)}}
- capture(v,size,frame){this.restoreVisual(v);this.applyWatermark();this.model.core().update();this.render(size,size,frame);const pixels=new Uint8Array(size*size*4);this.gl.readPixels(0,0,size,size,this.gl.RGBA,this.gl.UNSIGNED_BYTE,pixels);if(this.gl.getError()!==this.gl.NO_ERROR)throw Error('Model failed private draw validation');return pixels}
+ capture(v,size,frame){this.restoreVisual(v);this.model.core().update();this.render(size,size,frame);const pixels=new Uint8Array(size*size*4);this.gl.readPixels(0,0,size,size,this.gl.RGBA,this.gl.UNSIGNED_BYTE,pixels);if(this.gl.getError()!==this.gl.NO_ERROR)throw Error('Model failed private draw validation');return pixels}
  changed(a,b){let n=0;for(let i=0;i<a.length;i+=4)if(Math.abs(a[i]-b[i])+Math.abs(a[i+1]-b[i+1])+Math.abs(a[i+2]-b[i+2])+Math.abs(a[i+3]-b[i+3])>24&&++n>=8)return true;return false}
  validateEffects(){this.withFrame(192,frame=>{const baseline=this.capture(this.baseVisual,192,frame);for(const effect of this.adaptation.effects){if(!effect.enabled)continue;let visible=false;for(const sign of [1,-1]){this.resetFrame();const values={};for(const id of effect.ids){const p=this.parameters[id];if(effect.role==='blink')values[id]=p.default+((effect.reverse?p.max:p.min)-p.default);else if(effect.role==='breath')values[id]=p.default+((effect.reverse?p.min:p.max)-p.default)*.6;else {const direction=sign*(effect.reverse?-1:1);values[id]=p.default+direction*.35*(direction>0?p.max-p.default:p.default-p.min)}}this.apply(values);this.model.poseStep(0);if(this.changed(baseline,this.capture(this.visualSnapshot(),192,frame))){visible=true;break}}if(!visible){effect.enabled=false;effect.error='Parameter has no visible effect in this model';this.effects.disable(effect.role,effect.error)}}});this.resetFrame();this.model.core().update()}
  async loadMotions(signal){for(const item of this.manifest.motions??[]){signal.throwIfAborted();const record={id:item.id,name:item.name,enabled:false,error:item.error??null};let motion;try{if(item.error||!item.url)throw Error(item.error??'Motion resource missing');const data=await bytes(item.url,signal),info=validateMotion(new TextDecoder().decode(data),this.parameters,this.parts);motion=this.model.loadMotion(data,data.byteLength,item.name,undefined,undefined,undefined,undefined,undefined,true);if(!motion)throw Error('Cubism rejected motion consistency');const blink=this.profile.effectMap.blink.map(id=>this.ids.getId(id)),lipGroup=(Array.isArray(this.manifest.groups)?this.manifest.groups:[]).find(g=>g?.Target==='Parameter'&&g.Name==='LipSync')?.Ids,lip=Array.isArray(lipGroup)?lipGroup.slice(0,64):[];motion.setEffectIds(blink,lip.filter(id=>this.parameters[id]).map(id=>this.ids.getId(id)));motion.setLoop(false);motion.setFadeInTime(item.FadeInTime??.12);motion.setFadeOutTime(item.FadeOutTime??.12);const bounds=this.validateVisibleMotion(motion,info.durationMs,info.partIds);this.motions.set(item.id,{motion,...info,bounds,name:item.name});Object.assign(record,{enabled:true,error:null,durationMs:info.durationMs,originalDurationMs:info.originalDurationMs})}catch(e){motion?.release();if(signal.aborted)throw e;record.error=String(e.message).slice(0,120);if(this.manifest.qa)record.debug=String(e.stack).slice(0,3000)}this.catalog.push(record)}}
@@ -129,7 +124,7 @@ export class ModelScene {
   this.lastMode=state.mode;const previous=state.mode==='real'?this.realPose:this.pose;this.pose=this.rawPose(state,previous)
   if(frozen){
     const confirmed=this.realPose??this.pose;this.pose={...confirmed,values:{...confirmed.values},frozen:true}
-    ;(this.hasRealFrame?this.realFrame:this.baseFrame).restore(c);this.wasFrozen=true;this.applyWatermark();c.update();return
+    ;(this.hasRealFrame?this.realFrame:this.baseFrame).restore(c);this.wasFrozen=true;c.update();return
   }
   if(this.wasFrozen){this.needsStabilize=true;this.wasFrozen=false}
   if(this.committed)void this.requestHand(this.pose)
@@ -145,7 +140,7 @@ export class ModelScene {
     this.physicsState.restore(c)
   }
   this.model.poseStep(dt);this.trackPose();if(!this.motion)this.apply(this.displayPoseValues(this.pose))
-  this.clampParameters();this.physicsState.capture(c);this.applyWatermark();c.update()
+  this.clampParameters();this.physicsState.capture(c);c.update()
   if(state.mode==='real'){this.realPose={...this.pose,values:{...this.pose.values}};this.realFrame.capture(c);this.hasRealFrame=true}
  }
 
@@ -164,7 +159,7 @@ export class ModelScene {
   return {projection:Array.from(this.renderValues??[]),drawableBounds:this.drawableBounds(),cursorHandFollow:{...this.cursorHandReport(),values:this.cursorGaze.handValues(this.profile)},coreUpdateCalls:this.coreUpdateCalls,physicsCalls:this.physicsSteps,physicsSeconds:this.physicsSeconds,physicsEnabled:!!physics,physicsFps:rig?.fps??0,physicsOutputs:outputs,physicsDependencies:dependencies,parameterViewAligned:c._parameterValues===raw,viewMismatches,parameterViewLength:c._parameterValues?.length,coreParameterLength:raw.length,nonfiniteVertices,visibleDrawables,changedVertices,drawableCount:c.getDrawableCount(),clippingMasks:clipping?._clippingContextListForMask?.length??0,offscreenTargets:renderer._offscreenList?.length??0,glError:this.gl.getError()}
  }
  cursorHandReport(){return {source:'system-cursor',yCorrection:this.profile.cursorHandYCorrection??1,calibration:this.cursorHandCalibration,axes:this.cursorGaze.handAxes(this.profile),envelope:this.cursorHandBounds}}
- adapterReport(){return {cursorHandFollow:this.cursorHandReport(),watermark:this.watermarkReport(),parameters:Object.entries(this.parameters).map(([id,p])=>({id,...p,name:this.manifest.labels?.[id]??id})),inputs:this.adaptation.inputs,effects:this.adaptation.effects,handStyles:this.manifest.handStyles??[{id:'default',name:'Original'}],handStyle:this.manifest.handStyle??'default',warnings:[...this.warnings],handGroups:this.hands.length,handCache:this.handCache.stats(),poseSupported:this.poseIds.length>0}}
+ adapterReport(){return {cursorHandFollow:this.cursorHandReport(),parameters:Object.entries(this.parameters).map(([id,p])=>({id,...p,name:this.manifest.labels?.[id]??id})),inputs:this.adaptation.inputs,effects:this.adaptation.effects,handStyles:this.manifest.handStyles??[{id:'default',name:'Original'}],handStyle:this.manifest.handStyle??'default',warnings:[...this.warnings],handGroups:this.hands.length,handCache:this.handCache.stats(),poseSupported:this.poseIds.length>0}}
  report(){const c=this.model.core();return {canvas:{width:c.getCanvasWidth(),height:c.getCanvasHeight()},parameters:this.parameters,missing:this.pose?.missing??[],coreVersion:Live2DCubismCore.Version.csmGetVersion(),bounds:this.bounds,effects:this.effects.report(),adapterCatalog:this.adapterReport(),motionCatalog:this.catalog,motionSignature:this.manifest.signature}}
  release(){if(this.released)return;this.released=true;this.cursorGaze?.suspend();this.onHandReady=()=>{};this.handCache?.release();this.model?.stop();for(const e of this.motions.values())e.motion.release();this.motions.clear();this.motion=null;this.hands=[];this.model?.release();this.model=null;for(const tex of this.textures)this.gl.deleteTexture(tex);this.textures=[]}
 }

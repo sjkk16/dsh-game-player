@@ -9,7 +9,7 @@ export function validateMotion(json, parameters, parts = {}) {
   const ids=new Set();let segments=0,points=0
   for(const c of j.Curves){
     if(typeof c.Id!=='string'||c.Id.length>128||c.Id.includes('\0')||c.Target==='Parameter'&&!provided(parameters,c.Id)||c.Target==='PartOpacity'&&!provided(parts,c.Id)&&!provided(parameters,c.Id)||c.Target==='Model'&&!['EyeBlink','LipSync','Opacity'].includes(c.Id)||!['Parameter','PartOpacity','Model'].includes(c.Target))bad('Motion parameter or part not provided: '+String(c.Id))
-    if(c.Id==='Paramshuiying')bad('Watermark/author switch is not a character motion')
+    if(c.Id==='Paramshuiying')bad('Reserved author parameter is not a character motion')
     const curveId=c.Target+':'+c.Id;if(ids.has(curveId))bad('Duplicate motion parameter: '+c.Id);ids.add(curveId)
     const a=c.Segments;if(!Array.isArray(a)||a.length<5||a.length>16384||!a.every(finite))bad('Invalid motion curve: '+c.Id)
     let last=a[0],i=2;points++
