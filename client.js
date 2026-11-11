@@ -110,7 +110,7 @@ window.__ModuleLoader__.load({
       'keyboardLayout.tkl': '87 键（无小键盘）',
       'keyboardLayout.compact': '65 键（紧凑）',
       'field.keyboardSkin.label': '键盘皮肤',
-      'field.keyboardSkin.hint': '内置绘制按主题配色画键帽；自定义图片需先在上方「桌宠管理」导入键盘图片。',
+      'field.keyboardSkin.hint': '内置绘制按主题配色画键帽；自定义图片需先在本页下方导入键盘图片。',
       'keyboardSkin.builtin': '内置绘制',
       'keyboardSkin.custom': '自定义图片',
       'field.maxWidth.label': '截图宽度',
@@ -174,7 +174,7 @@ window.__ModuleLoader__.load({
       'keyboardLayout.tkl': '87 keys (no number pad)',
       'keyboardLayout.compact': '65 keys (compact)',
       'field.keyboardSkin.label': 'Keyboard skin',
-      'field.keyboardSkin.hint': 'Built-in drawing paints the keycaps with the theme palette; a custom image must first be imported in Desktop pet management above.',
+      'field.keyboardSkin.hint': 'Built-in drawing paints the keycaps with the theme palette; import a custom keyboard image below before selecting it here.',
       'keyboardSkin.builtin': 'Built-in drawing',
       'keyboardSkin.custom': 'Custom image',
       'field.maxWidth.label': 'Capture width',
@@ -206,6 +206,7 @@ window.__ModuleLoader__.load({
     Object.assign(zh, {
       'local.title':'桌宠管理','local.hint':'本机共享偏好。导入与预览只控制显示；打开本页不会启动桌宠。',
       'local.unavailable':'桌宠管理接口不可用或当前连接不是宿主 owner；原有插件配置仍可使用。',
+      'local.controlMode':'操作识别模式','local.controlMode.ai-only':'仅显示 AI 操作','local.controlMode.adaptive':'控制自适应模式','local.controlModeHint':'显示期间只读识别整个桌面的键鼠操作，不中断 AI；上方持续显示最后识别的操作者，不表示仍在持续输入。不读取或保存输入文本。','local.controlModeUnsupported':'此功能需要 0.3.10 桌面运行时；旧版后备显示不支持。','local.modelInfoVisible':'显示模型下方文字','local.modelInfoVisibleHint':'控制底部普通状态和功能说明；上方操作者及安全警告仍显示。',
       'local.widthDip':'桌宠大小','local.keyboardWidthDip':'键盘面板大小','local.opacity':'不透明度',
       'local.model':'模型','local.profile':'全局参数适配 JSON','local.globalProfile':'全局键鼠配置（无需保留原文件）','local.image':'键盘图片','local.default':'使用默认模型／适配',
       'local.emptyImage':'未导入（导入后在键盘外观中选择自定义图片）','local.importModelFile':'导入模型文件／ZIP','local.importModelFolder':'导入模型文件夹',
@@ -217,7 +218,7 @@ window.__ModuleLoader__.load({
       'local.fallback':'键盘后备模式','local.stopped':'已停止','local.error':'显示异常','local.visible':'已显示','local.hidden':'已隐藏',
       'local.saved':'已保存','local.completed':'操作完成','local.pending':'正在处理…','local.invalid':'数值无效或超出范围',
       'local.conflict':'其他入口已修改偏好，已刷新；请确认新值后重试。','local.unsafe':'真实输入仍按住或释放未确认，不能播放预览。',
-      'local.disabled':'悬浮面板已关闭；可保存尺寸，导入、显示和预览需先开启上方开关。',
+      'local.disabled':'悬浮面板已关闭；可保存尺寸，导入、显示和预览需先开启悬浮面板开关。',
       'local.runtimeLimit':'当前后备运行时不支持完整桌宠管理。可重试显示，原有键盘展示仍可使用。',
       'local.pickerUnavailable':'缺少本机文件选择器，请重新构建或安装桌宠运行时。','local.importBusy':'另一个桌宠操作正在进行，请完成或取消后再导入。',
       'local.importRecovery':'可直接导入模型；需要时会在隐藏状态重试渲染器，不要求默认模型先加载成功。',
@@ -226,6 +227,7 @@ window.__ModuleLoader__.load({
     Object.assign(en, {
       'local.title':'Desktop pet management','local.hint':'Preferences are shared on this PC. Import and preview affect display only; opening this page never starts the pet.',
       'local.unavailable':'Desktop management is unavailable or this connection is not the Host owner. Existing plugin settings remain available.',
+      'local.controlMode':'Input recognition mode','local.controlMode.ai-only':'AI inputs only','local.controlMode.adaptive':'Control adaptive mode','local.controlModeHint':'Read-only desktop key/mouse observation while visible; never interrupts AI. The header retains the last recognized input source, not continuous activity. No typed text is read or saved.','local.controlModeUnsupported':'Requires the 0.3.10 desktop runtime; legacy fallback cannot support this feature.','local.modelInfoVisible':'Show text below the model','local.modelInfoVisibleHint':'Controls ordinary footer text; the actor header and safety warnings remain visible.',
       'local.widthDip':'Pet size','local.keyboardWidthDip':'Keyboard panel size','local.opacity':'Opacity',
       'local.model':'Model','local.profile':'Global parameter adapter JSON','local.globalProfile':'Global input settings (source file no longer required)','local.image':'Keyboard image','local.default':'Default model / adapter',
       'local.emptyImage':'No imported image (select Custom image under Keyboard appearance after importing)',
@@ -239,7 +241,7 @@ window.__ModuleLoader__.load({
       'local.saved':'Saved','local.completed':'Done','local.pending':'Working…','local.invalid':'Invalid or out-of-range number',
       'local.conflict':'Preferences changed in another entry. Values were refreshed; review them and retry.',
       'local.unsafe':'Real input is held or its release is unconfirmed. Preview is unavailable.',
-      'local.disabled':'The overlay is disabled. Sizes can be saved; enable the switch above before importing, showing, or previewing.',
+      'local.disabled':'The overlay is disabled. Sizes can be saved; enable the overlay switch before importing, showing, or previewing.',
       'local.runtimeLimit':'This fallback runtime does not support full pet management. Retry the display; the existing keyboard view remains available.',
       'local.pickerUnavailable':'The native file picker is missing. Rebuild or reinstall the desktop runtime.','local.importBusy':'Another desktop operation is active. Finish or cancel it before importing.',
       'local.importRecovery':'Import directly; the renderer can retry hidden without loading the default model first.',
@@ -297,6 +299,79 @@ window.__ModuleLoader__.load({
       }
       return (!owns(patch,'handStyle')||record.handStyle===patch.handStyle)&&(!patch.reset||value.preferences.profilePath===null)
     }
+    Object.assign(zh, {
+  "tabs.label": "设置分类",
+  "tabs.common": "常用",
+  "tabs.models": "模型",
+  "tabs.appearance": "外观",
+  "tabs.safety": "安全与输入",
+  "page.subtitle": "桌宠、键鼠面板与安全设置",
+  "page.autosave": "修改后自动保存",
+  "page.saved": "更改已保存",
+  "page.commonHint": "让桌宠以你喜欢的方式陪伴。",
+  "page.modelsHint": "管理模型资源，按需调整参数与动作。",
+  "page.appearanceHint": "自定义键盘面板的样式与尺寸。",
+  "page.safetyHint": "控制真实输入的审批、时长和截图范围。",
+  "page.currentModel": "当前模型",
+  "page.manageModels": "管理 / 切换模型",
+  "page.display": "显示与布局",
+  "page.behavior": "识别与文字",
+  "page.keyboardImage": "自定义键盘图片",
+  "page.modelImport": "直接导入模型",
+  "page.modelImportHint": "直接选择文件、ZIP 或文件夹，验证后切换当前模型；添加到模型库请使用上方按钮。",
+  "page.adapterFile": "适配文件",
+  "page.adapterFileHint": "导入或恢复全局键鼠参数配置。",
+  "page.modelAdvanced": "高级 · 参数适配",
+  "page.motionAdvanced": "高级 · 动作管理",
+  "page.recovery": "显示恢复",
+  "page.running": "进行中的操作",
+  "page.emptyLibrary": "模型库为空，可添加模型文件或文件夹。",
+  "page.readOnly": "配置只读",
+  "page.loading": "正在读取配置",
+  "page.unavailable": "配置不可用",
+  "page.previewBlocked": "安全预览暂不可用：请先确认真实输入已释放，并等待当前操作完成。",
+  "page.layoutHint": "调整尺寸不会自动显示桌宠；调整位置后请结束并保存。",
+  "page.actionBlocked": "当前操作不可用，请查看运行状态或等待正在进行的操作完成。"
+})
+    Object.assign(en, {
+  "tabs.label": "Settings categories",
+  "tabs.common": "General",
+  "tabs.models": "Models",
+  "tabs.appearance": "Appearance",
+  "tabs.safety": "Safety & input",
+  "page.subtitle": "Desktop pet, keyboard panel and safety",
+  "page.autosave": "Changes save automatically",
+  "page.saved": "Changes saved",
+  "page.commonHint": "Make your desktop pet feel at home.",
+  "page.modelsHint": "Manage models, parameter bindings and motions.",
+  "page.appearanceHint": "Customize the keyboard panel style and size.",
+  "page.safetyHint": "Manage real-input approval, timing and screen capture.",
+  "page.currentModel": "Current model",
+  "page.manageModels": "Manage / switch model",
+  "page.display": "Display & layout",
+  "page.behavior": "Recognition & text",
+  "page.keyboardImage": "Custom keyboard image",
+  "page.modelImport": "Import a model directly",
+  "page.modelImportHint": "Choose a file, ZIP or folder to validate and switch the current model. Use the buttons above to add models to the library.",
+  "page.adapterFile": "Adapter file",
+  "page.adapterFileHint": "Import or reset global input parameter bindings.",
+  "page.modelAdvanced": "Advanced · parameter bindings",
+  "page.motionAdvanced": "Advanced · motions",
+  "page.recovery": "Display recovery",
+  "page.running": "In progress",
+  "page.emptyLibrary": "Your model library is empty. Add a model file or folder.",
+  "page.readOnly": "Read-only configuration",
+  "page.loading": "Reading configuration",
+  "page.unavailable": "Configuration unavailable",
+  "page.previewBlocked": "Safe preview is unavailable. Confirm that real inputs are released and wait for the current operation to finish.",
+  "page.layoutHint": "Resizing never shows the pet automatically. Finish and save after adjusting its position.",
+  "page.actionBlocked": "This action is unavailable. Check the runtime status or wait for the current operation to finish."
+})
+
+    const SETTINGS_TABS = ['common', 'models', 'appearance', 'safety']
+    // Moving to another settings panel must not commit an unfinished number.
+    const isSettingsNavigation = event => Boolean(event?.relatedTarget?.closest?.('[data-dgp-navigation]'))
+
     class OverlayUIController {
       constructor({setTimer=(fn,ms)=>globalThis.setTimeout(fn,ms),clearTimer=id=>globalThis.clearTimeout(id),document:doc=globalThis.document}={}) {
         this.setTimer=setTimer;this.clearTimer=clearTimer;this.doc=doc;this.listeners=new Set();this.timer=null
@@ -459,14 +534,20 @@ window.__ModuleLoader__.load({
 
     function LocalRange({manager,spec,value,disabled,t,resetToken}) {
       const display=spec.key==='opacity'?Math.round(value*100):value
-      const [draft,setDraft]=React.useState(String(display)),[invalid,setInvalid]=React.useState(false)
+      const [draft,setDraft]=React.useState(String(display)),[invalid,setInvalid]=React.useState(false),[saveError,setSaveError]=React.useState('')
+      const saveSequence=React.useRef(0)
       const focused=React.useRef(false),timer=React.useRef(null),cancelBlur=React.useRef(false)
       React.useEffect(()=>{if(!focused.current)setDraft(String(display))},[display,resetToken])
       React.useEffect(()=>()=>clearTimeout(timer.current),[])
       const commit=(raw=draft)=>{
         clearTimeout(timer.current);const number=Number(raw)
         if(raw.trim()===''||!Number.isFinite(number)||number<spec.min||number>spec.max){setInvalid(true);return}
-        setInvalid(false);void manager.set(spec.key,spec.key==='opacity'?number/100:number)
+        setInvalid(false);setSaveError('');const sequence=++saveSequence.current
+        Promise.resolve(manager.set(spec.key,spec.key==='opacity'?number/100:number)).then(()=>{
+          if(sequence!==saveSequence.current)return
+          const error=manager.getSnapshot?.().failure
+          setSaveError(typeof error==='string'?error:error?.message??'')
+        }).catch(error=>{if(sequence===saveSequence.current)setSaveError(String(error?.message??error))})
       }
       const change=event=>{const next=event.target.value;setDraft(next);setInvalid(false);clearTimeout(timer.current);timer.current=setTimeout(()=>commit(next),120)}
       const id=React.useId()
@@ -477,9 +558,10 @@ window.__ModuleLoader__.load({
             'aria-label':t('local.'+spec.key),onChange:change,onFocus:()=>{focused.current=true},onBlur:()=>{focused.current=false},onPointerUp:event=>commit(event.currentTarget.value),onKeyUp:event=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown','Enter'].includes(event.key))commit(event.currentTarget.value)}}),
           h('input',{key:'number',id,type:'number',className:'dgp-input'+(invalid?' dgp-invalid':''),min:spec.min,max:spec.max,value:draft,disabled,
             onFocus:()=>{focused.current=true},onChange:event=>{setDraft(event.target.value);setInvalid(false)},
-            onBlur:()=>{focused.current=false;if(cancelBlur.current){cancelBlur.current=false;return}commit()},onKeyDown:event=>{if(event.key==='Enter'){event.preventDefault();event.stopPropagation();event.currentTarget.blur()}else if(event.key==='Escape'){event.preventDefault();event.stopPropagation();event.nativeEvent?.stopImmediatePropagation?.();clearTimeout(timer.current);cancelBlur.current=true;setDraft(String(display));setInvalid(false);event.currentTarget.blur()}}}),
+            onBlur:event=>{focused.current=false;if(cancelBlur.current){cancelBlur.current=false;return}if(!isSettingsNavigation(event))commit()},onKeyDown:event=>{if(event.key==='Enter'){event.preventDefault();event.stopPropagation();event.currentTarget.blur()}else if(event.key==='Escape'){event.preventDefault();event.stopPropagation();event.nativeEvent?.stopImmediatePropagation?.();clearTimeout(timer.current);cancelBlur.current=true;setDraft(String(display));setInvalid(false);event.currentTarget.blur()}}}),
           h('span',{key:'unit',className:'dgp-hint'},spec.key==='opacity'?'%':'DIP'),
           invalid?h('span',{key:'error',className:'dgp-fieldError',role:'alert'},t('local.invalid')):null,
+          saveError?h('span',{key:'save-error',className:'dgp-fieldError',role:'alert'},saveError):null,
         ]),
       ])
     }
@@ -680,6 +762,7 @@ window.__ModuleLoader__.load({
           h('div',{key:'add',className:'dgp-localButtons'},['addLibraryFile','addLibraryFolder'].map(action=>h('button',{key:action,type:'button',className:'dgp-button',disabled:!canAdd,onClick:()=>void manager.command(action)},t('local.'+action)))),
         ]),
         ready&&!value.capabilities?.library?h('p',{key:'unsupported',className:'dgp-status'},t('local.libraryUnavailable')):null,
+        !library.items.length?h('p',{key:'empty',className:'dgp-empty'},t('page.emptyLibrary')):null,
         h('div',{key:'items',className:'dgp-libraryItems','aria-label':t('local.library')},library.items.map(item=>{
           const active=value.activeModelId===item.id,showing=active&&value.visible&&value.view!=='keyboard'&&value.modelLoaded===true&&value.renderer==='live2d'
           return h('article',{key:item.id,className:'dgp-row dgp-libraryItem'+(active?' dgp-libraryActive':'')},[
@@ -696,60 +779,127 @@ window.__ModuleLoader__.load({
           ])
         })),
         h(LibraryCandidateControls,{key:'candidates',manager,state,value,t}),
-        h('div',{key:'view',className:'dgp-row dgp-localButtons'},['model','keyboard'].map(view=>h('button',{key:'library-view-'+view,type:'button',className:'dgp-button','aria-pressed':value.view===view,disabled:!ready||!value.enabled||busy,onClick:()=>void manager.command({type:'setDisplayView',view,revision:value.revision})},t(view==='model'?'local.libraryModelView':'local.libraryKeyboardView')))),
         (value.loading||['selectLibraryModel','addLibraryModels','addLibraryFile','addLibraryFolder','show','retryDisplay'].includes(state.pending))?h('button',{key:'library-stop-load',type:'button',className:'dgp-button',disabled:!ready,onClick:()=>void manager.command('cancelLoad')},t('local.modelCancel')):null,
         value.libraryError?h('p',{key:'error',className:'dgp-status dgp-error',role:'alert'},value.libraryError):null,
         h('p',{key:'limit',className:'dgp-hint'},t('local.libraryLimit')),
       ])
     }
-    function OverlayControls({manager,t}) {
+    function ControlDisplaySettings({manager,state,value,t}) {
+      const id=React.useId(),modeId=id+'-mode',modeLabel=id+'-mode-label',infoLabel=id+'-info-label'
+      const prefs=value.preferences??{},pending=Boolean(state.pending)||value.loading,ready=state.status==='ready'
+      const modeSupported=ready&&value.capabilities?.adaptiveControl===true,textSupported=ready&&value.capabilities?.modelInfoVisibility===true
+      return h('div',{className:'dgp-controlDisplay'},[
+        h('div',{key:'mode',className:'dgp-row'},[
+          h('div',{key:'text',className:'dgp-text'},[h('label',{key:'label',id:modeLabel,htmlFor:modeId,className:'dgp-label'},t('local.controlMode')),h('span',{key:'hint',className:'dgp-hint'},t(modeSupported?'local.controlModeHint':'local.controlModeUnsupported'))]),
+          h('select',{key:'select',id:modeId,className:'dgp-select',value:prefs.controlMode??'ai-only',disabled:!ready||pending||(!modeSupported&&prefs.controlMode!=='adaptive'),'aria-labelledby':modeLabel,onChange:e=>void manager.set('controlMode',e.target.value)},['ai-only','adaptive'].map(mode=>h('option',{key:mode,value:mode,disabled:mode==='adaptive'&&!modeSupported},t('local.controlMode.'+mode)))),
+        ]),
+        h('div',{key:'textVisible',className:'dgp-row'},[
+          h('div',{key:'text',className:'dgp-text'},[h('span',{key:'label',id:infoLabel,className:'dgp-label'},t('local.modelInfoVisible')),h('span',{key:'hint',className:'dgp-hint'},t('local.modelInfoVisibleHint'))]),
+          h(SwitchControl,{key:'switch',checked:prefs.modelInfoVisible??true,disabled:!textSupported||pending,labelId:infoLabel,onChange:visible=>void manager.set('modelInfoVisible',visible)}),
+        ]),
+      ])
+    }
+
+    function OverlayControls({manager,t,section='all',onManageModels}) {
       const state=React.useSyncExternalStore(manager.subscribe,manager.getSnapshot,manager.getSnapshot)
       const value=state.value??{},prefs=value.preferences??{},ready=state.status==='ready',supported=ready&&value.capabilities?.management
       const enabled=supported&&value.enabled,processing=Boolean(state.pending)||value.loading
       const command=action=>void manager.command(action),importUnavailable=modelImportUnavailable(state)
-      const button=(action,disabled=false,reason)=>h('button',{key:action,type:'button',className:'dgp-button',disabled:!ready||disabled,title:reason?t(reason):undefined,onClick:()=>command(action)},t('local.'+action))
+      const button=(action,disabled=false,reason,primary=false)=>h('button',{key:action,type:'button',className:'dgp-button'+(primary?' dgp-primary':''),disabled:!ready||disabled,title:reason?t(reason):undefined,onClick:()=>command(action)},t('local.'+action))
       const error=state.failure?.code==='adapter_unsaved'?t('local.adapterUnsaved'):state.failure?.code==='stale_adapter_catalog'?t('local.adapterStale'):state.failure?.code==='stale_model_catalog'?t('local.modelStale'):state.failure?.code==='stale_model_resources'?t('local.modelResourcesStale'):state.failure?.code==='stale_motion_catalog'?t('local.motionStale'):state.failure?.code==='library_conflict'?t('local.libraryConflict'):state.failure?.code==='preference_conflict'?t('local.conflict'):state.failure?.code==='unsafe_preview'?t('local.unsafe'):(typeof state.failure==='string'?state.failure:state.failure?.message)
       const file=(label,path,actions)=>h('div',{key:label,className:'dgp-row dgp-localFile'},[
         h('div',{key:'text',className:'dgp-text'},[h('span',{key:'label',className:'dgp-label'},t('local.'+label)),h('span',{key:'path',className:'dgp-path',title:path??''},path??t(label==='image'?'local.emptyImage':'local.default'))]),
         h('div',{key:'actions',className:'dgp-localButtons'},actions),
       ])
-      return h('section',{className:'dgp-group','aria-label':t('local.title')},[
-        h('h3',{key:'title',className:'dgp-groupTitle'},t('local.title')),
-        h('p',{key:'hint',className:'dgp-hint'},t('local.hint')),
-        h('div',{key:'body',className:'dgp-list'},[
-          h('div',{key:'state',className:'dgp-row dgp-localStatus','aria-live':'polite'},[
-            h('strong',{key:'phase'},ready?t('local.'+(value.phase??'not-started')):t('local.unavailable')),
-            ready?h('span',{key:'renderer',className:'dgp-hint'},[value.renderer??'—',' · ',t(value.visible?'local.visible':'local.hidden')]):null,
-            value.modelLoaded&&value.modelName?h('span',{key:'modelName',className:'dgp-hint',title:value.modelPath??''},value.modelName):null,
-            value.previewing?h('span',{key:'preview',className:'dgp-hint'},t('local.preview')):null,
-            value.stage?h('span',{key:'stage',className:'dgp-hint'},t('local.stage.'+value.stage)):null,
+      const card=(key,title,children,hint)=>h('section',{key,className:'dgp-group','aria-label':t(title)},[
+        h('h3',{key:'title',className:'dgp-groupTitle'},t(title)),
+        hint?h('p',{key:'hint',className:'dgp-hint'},t(hint)):null,
+        h('div',{key:'body',className:'dgp-list'},children),
+      ])
+      const ranges=keys=>keys.map(key=>{
+        const spec={widthDip:{min:220,max:1000,fallback:420},keyboardWidthDip:{min:450,max:1350,fallback:900},opacity:{min:45,max:100,fallback:1}}[key]
+        return h(LocalRange,{key,manager,spec:{key,...spec},value:prefs[key]??spec.fallback,disabled:!supported||value.loading,t,resetToken:JSON.stringify(state.failure)})
+      })
+      const cancelable=value.loading||Boolean(value.modelCatalog)||Boolean(value.libraryCatalog)||['importProfile','importKeyboardImage','importModelFile','importModelFolder','selectModel','selectLibraryModel','addLibraryModels','addLibraryFile','addLibraryFolder','show','retryDisplay','reloadModel'].includes(state.pending)
+      const currentName=value.modelName??value.modelLibrary?.items?.find(item=>item.id===value.activeModelId)?.name??t('local.default')
+      const status=h('section',{key:'runtime',className:'dgp-runtime','aria-label':t('local.title')},[
+        h('div',{key:'heading',className:'dgp-runtimeHeading'},[
+          h('div',{key:'identity',className:'dgp-text'},[
+            h('span',{key:'eyebrow',className:'dgp-eyebrow'},t('page.currentModel')),
+            h('strong',{key:'model',className:'dgp-modelName',title:value.modelPath??prefs.modelPath??''},currentName),
           ]),
-          h(ModelLibraryControls,{key:'library',manager,state,value,t}),
-          file('model',prefs.modelPath??value.modelPath,[button('importModelFile',Boolean(importUnavailable),importUnavailable),button('importModelFolder',Boolean(importUnavailable),importUnavailable)]),
-          importUnavailable?h('p',{key:'importLimit',className:'dgp-status'},t(importUnavailable)):(!value.capabilities?.model?h('p',{key:'importRecovery',className:'dgp-hint'},t('local.importRecovery')):null),
-          h(ModelCandidateControls,{key:'modelCandidates',manager,state,value,t}),
-          file('profile',Object.keys(globalAdapter(value).bindings??{}).length?t('local.globalProfile'):prefs.profilePath,[button('importProfile',Boolean(importUnavailable),importUnavailable),button('clearProfile',!enabled||(!prefs.profilePath&&!Object.keys(globalAdapter(value).bindings??{}).length)||processing)]),
-          h('details',{key:'advanced',className:'dgp-libraryAdvanced',open:false},[
-          h('summary',{key:'summary',className:'dgp-label'},t('local.libraryAdvanced')),
-          h(ModelAdapterControls,{key:'adapter',manager,state,value,t}),
-          h(MotionControls,{key:'motions',manager,state,value,t}),
-          file('image',prefs.keyboardImage,[button('importKeyboardImage',!enabled||processing),button('clearKeyboardImage',!enabled||!prefs.keyboardImage||processing)]),
-          ...[{key:'widthDip',min:220,max:1000,fallback:420},{key:'keyboardWidthDip',min:450,max:1350,fallback:900},{key:'opacity',min:45,max:100,fallback:1}].map(spec=>h(LocalRange,{key:spec.key,manager,spec,value:prefs[spec.key]??spec.fallback,disabled:!supported||value.loading,t,resetToken:JSON.stringify(state.failure)})),
+          h('div',{key:'state',className:'dgp-state','aria-live':'polite'},[
+            h('span',{key:'phase',className:'dgp-badge'},ready?t('local.'+(value.phase??'not-started')):t('local.unavailable')),
+            ready?h('span',{key:'visible',className:'dgp-hint'},[value.renderer??'—',' · ',t(value.visible?'local.visible':'local.hidden')]):null,
           ]),
-          h('div',{key:'buttons',className:'dgp-row dgp-localButtons'},[
-            button(value.visible?'hide':'show',!enabled||(processing&&!value.motion)),button(value.adjusting?'endAdjust':'beginAdjust',!enabled||processing),
-            button('resetLayout',!supported||processing),button('reloadModel',!enabled||!value.capabilities?.model||processing),button('retryDisplay',!value.enabled||processing),
-            button('preview',!value.enabled||!value.capabilities?.preview||processing),
-            value.previewing&&!value.motion?button('stopPreview',false):null,value.loading?button('cancelLoad',false):null,
-          ]),
+        ]),
+        h('p',{key:'feedback',className:'dgp-status','aria-live':'polite'},state.pending||value.loading||value.motion||value.previewing||value.adjusting
+          ?[t('page.running'),' · ',state.pending?t('local.pending'):value.motion?t('local.motionPlaying'):value.previewing?t('local.preview'):value.adjusting?t('local.beginAdjust'):t('local.loading'),value.stage?' · '+t('local.stage.'+value.stage):'']
+          :state.feedback?t('local.'+state.feedback):t('local.hint')),
+        h('div',{key:'interrupts',className:'dgp-localButtons'},[
+          cancelable?button('cancelLoad'):null,
+          value.previewing&&!value.motion?button('stopPreview'):null,
+          value.motion?button('stopMotion'):null,
+          value.adjusting?button('endAdjust',!enabled||processing):null,
+        ]),
+        h('details',{key:'recovery',className:'dgp-recovery'},[
+          h('summary',{key:'title'},t('page.recovery')),
+          h('div',{key:'actions',className:'dgp-localButtons'},[button('reloadModel',!enabled||!value.capabilities?.model||processing),button('retryDisplay',!value.enabled||processing)]),
+          (!enabled||processing||!value.capabilities?.model)?h('p',{key:'reason',className:'dgp-hint'},t(!ready?'local.unavailable':!value.enabled?'local.disabled':processing?'local.importBusy':'local.runtimeLimit')):null,
         ]),
         !ready?h('p',{key:'unavailable',className:'dgp-status'},t('local.unavailable')):null,
         ready&&!value.enabled?h('p',{key:'disabled',className:'dgp-status'},t('local.disabled')):null,
         ready&&!supported?h('p',{key:'limit',className:'dgp-status'},t('local.runtimeLimit')):null,
         value.preferenceError||value.error?h('p',{key:'runtimeError',className:'dgp-status dgp-error',role:'alert'},value.preferenceError||value.error):null,
         error?h('p',{key:'error',className:'dgp-status dgp-error',role:'alert'},error):null,
-        h('p',{key:'feedback',className:'dgp-status','aria-live':'polite'},state.pending?t('local.pending'):(state.feedback?t('local.'+state.feedback):'')),
       ])
+      const common=h('div',{key:'common',className:'dgp-sectionStack'},[
+        h('div',{key:'model-link',className:'dgp-modelShortcut'},[
+          h('div',{key:'text',className:'dgp-text'},[h('span',{className:'dgp-eyebrow'},t('page.currentModel')),h('strong',{className:'dgp-label'},currentName)]),
+          h('button',{key:'manage-models',type:'button',className:'dgp-button','data-dgp-navigation':true,onClick:()=>onManageModels?.()},t('page.manageModels')),
+        ]),
+        card('layout','page.display',[
+          h('div',{key:'buttons',className:'dgp-row dgp-localButtons'},[
+            button(value.visible?'hide':'show',!enabled||(processing&&!value.motion),null,true),
+            !value.adjusting?button('beginAdjust',!enabled||processing):null,
+            button('resetLayout',!supported||processing),
+            button('preview',!value.enabled||!value.capabilities?.preview||processing),
+          ]),
+          (!enabled||processing)?h('p',{key:'operation-reason',className:'dgp-inlineHint'},t(!ready?'local.unavailable':!value.enabled?'local.disabled':processing?'local.importBusy':'local.runtimeLimit')):null,
+          !value.capabilities?.preview?h('p',{key:'preview-reason',className:'dgp-inlineHint'},t('page.previewBlocked')):null,
+          ...ranges(['widthDip','opacity']),
+        ],'page.layoutHint'),
+        card('control-display','page.behavior',[h(ControlDisplaySettings,{key:'controlDisplay',manager,state,value,t})]),
+      ])
+      const models=h('div',{key:'models',className:'dgp-sectionStack'},[
+        h('section',{key:'library-card',className:'dgp-list','aria-label':t('local.library')},[h(ModelLibraryControls,{key:'library',manager,state,value,t})]),
+        card('direct-import','page.modelImport',[
+          file('model',prefs.modelPath??value.modelPath,[button('importModelFile',Boolean(importUnavailable),importUnavailable),button('importModelFolder',Boolean(importUnavailable),importUnavailable)]),
+          importUnavailable?h('p',{key:'importLimit',className:'dgp-inlineHint'},t(importUnavailable)):(!value.capabilities?.model?h('p',{key:'importRecovery',className:'dgp-inlineHint'},t('local.importRecovery')):null),
+          h(ModelCandidateControls,{key:'modelCandidates',manager,state,value,t}),
+        ],'page.modelImportHint'),
+        h('details',{key:'advanced',className:'dgp-libraryAdvanced'},[
+          h('summary',{key:'summary'},t('page.modelAdvanced')),
+          h(ModelAdapterControls,{key:'adapter',manager,state,value,t}),
+        ]),
+        h('details',{key:'adapter-file',className:'dgp-libraryAdvanced'},[
+          h('summary',{key:'summary'},t('page.adapterFile')),
+          h('p',{key:'hint',className:'dgp-inlineHint'},t('page.adapterFileHint')),
+          file('profile',Object.keys(globalAdapter(value).bindings??{}).length?t('local.globalProfile'):prefs.profilePath,[button('importProfile',Boolean(importUnavailable),importUnavailable),button('clearProfile',!enabled||(!prefs.profilePath&&!Object.keys(globalAdapter(value).bindings??{}).length)||processing)]),
+          importUnavailable?h('p',{key:'reason',className:'dgp-inlineHint'},t(importUnavailable)):null,
+        ]),
+        h('details',{key:'motion-advanced',className:'dgp-libraryAdvanced'},[
+          h('summary',{key:'summary'},t('page.motionAdvanced')),
+          h(MotionControls,{key:'motions',manager,state,value,t}),
+        ]),
+      ])
+      const appearance=card('keyboard-image','page.keyboardImage',[
+        file('image',prefs.keyboardImage,[button('importKeyboardImage',!enabled||processing),button('clearKeyboardImage',!enabled||!prefs.keyboardImage||processing)]),
+        !enabled||processing?h('p',{key:'reason',className:'dgp-inlineHint'},t(!ready?'local.unavailable':!value.enabled?'local.disabled':processing?'local.importBusy':'local.runtimeLimit')):null,
+        ...ranges(['keyboardWidthDip']),
+      ])
+      const sections={status,common,models,appearance}
+      return section==='all'?h('div',{className:'dgp-sectionStack'},Object.values(sections)):sections[section]??null
     }
 
     const CSS = `
@@ -782,6 +932,48 @@ window.__ModuleLoader__.load({
 .dgp-status{font-size:12.5px;line-height:18px;color:var(--dsw-alias-label-secondary);margin:0}
 .dgp-status.dgp-error{color:var(--dsw-alias-state-error-primary)}
 .dgp-danger{display:flex;align-items:flex-start;gap:8px;padding:10px 14px;box-sizing:border-box;border:0.5px solid var(--dsw-alias-state-error-primary);border-radius:var(--dsw-radius-lg,12px);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-state-error-primary);font-size:12.5px;line-height:18px}
+.dgp-page{container-type:inline-size;container-name:dgp;width:100%;gap:20px;min-width:0;padding:2px 0 20px}
+.dgp-page *{box-sizing:border-box}.dgp-page [hidden]{display:none!important}
+.dgp-pageHeading,.dgp-runtimeHeading,.dgp-modelShortcut{display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0}
+.dgp-pageHeading h2{margin:0;font-size:22px;line-height:30px;font-weight:650;letter-spacing:-.4px}.dgp-pageHeading p{margin:4px 0 0}
+.dgp-saveState{font-size:12px;color:var(--dsw-alias-label-secondary);text-align:right;max-width:40%;flex-shrink:0}
+.dgp-runtime{padding:18px 20px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--dsw-alias-border-l1);border-radius:14px;background:var(--dsw-alias-bg-layer-1);min-width:0}
+.dgp-runtime .dgp-localButtons:empty{display:none}.dgp-eyebrow{font-size:11px;line-height:18px;color:var(--dsw-alias-label-secondary);letter-spacing:.4px}
+.dgp-modelName{font-size:17px;line-height:24px;overflow-wrap:anywhere}.dgp-state{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;max-width:45%}
+.dgp-badge{padding:3px 9px;border-radius:6px;font-size:12px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);border:1px solid var(--dsw-alias-border-l1)}
+.dgp-recovery{border-top:1px solid var(--dsw-alias-border-l1);padding-top:8px;font-size:12px;color:var(--dsw-alias-label-secondary)}
+.dgp-recovery summary{cursor:pointer;width:fit-content}.dgp-recovery .dgp-localButtons{padding-top:10px}.dgp-recovery p{margin:8px 0 0}
+.dgp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:4px;border-radius:11px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1)}
+.dgp-tab{font:inherit;font-size:13px;line-height:20px;border:1px solid transparent;border-radius:8px;padding:9px 8px;cursor:pointer;background:transparent;color:var(--dsw-alias-label-secondary);min-width:0;overflow-wrap:anywhere}
+.dgp-tab[aria-selected=true]{color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-1);border-color:var(--dsw-alias-border-l1);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.dgp-tab:hover{color:var(--dsw-alias-label-primary)}.dgp-tab:focus-visible,.dgp-tabPanel:focus-visible,.dgp-page summary:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
+.dgp-tabPanel,.dgp-sectionStack{display:flex;flex-direction:column;gap:20px;min-width:0}.dgp-panelHint{margin:0;font-size:13px;color:var(--dsw-alias-label-secondary);line-height:20px}
+.dgp-group{gap:9px;min-width:0}.dgp-groupTitle{font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary)}
+.dgp-group>.dgp-hint{margin:0}.dgp-modelShortcut{border-left:3px solid var(--dsw-alias-brand-primary);padding:4px 0 4px 14px}
+.dgp-primary{background:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);font-weight:600}
+.dgp-button{min-height:34px;line-height:20px;max-width:100%;overflow-wrap:anywhere}.dgp-button:not(:disabled):hover{filter:brightness(.95)}
+.dgp-label{overflow-wrap:anywhere}.dgp-row{min-width:0}.dgp-actions{flex-wrap:wrap;justify-content:flex-end;max-width:55%}.dgp-fieldError{overflow-wrap:anywhere}
+.dgp-localFile .dgp-text{min-width:min(200px,100%)}.dgp-localRange{min-width:0}.dgp-localRange input[type=range]{min-width:80px}
+.dgp-localLabel{min-width:110px}.dgp-select{max-width:100%}.dgp-path{overflow-wrap:anywhere}.dgp-inlineHint{margin:0;padding:0 16px 12px;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary)}
+.dgp-empty{margin:8px 16px;padding:18px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px}
+.dgp-libraryAdvanced{margin:0;border-radius:12px;background:var(--dsw-alias-bg-layer-1);min-width:0}.dgp-libraryAdvanced>summary{font-size:13px;font-weight:500;line-height:22px;color:var(--dsw-alias-label-primary)}
+.dgp-libraryAdvanced .dgp-list{border:0;border-radius:0}.dgp-libraryAdvanced .dgp-groupTitle,.dgp-libraryAdvanced .dgp-list>.dgp-hint{margin:10px 16px}
+.dgp-libraryAdvanced .dgp-status{padding:8px 16px}.dgp-libraryAdvanced>.dgp-list{margin-bottom:12px}.dgp-adapterActions select{width:100%;min-width:0}
+@container dgp (max-width:640px){
+ .dgp-row:not(.dgp-localButtons):not(.dgp-libraryItem){flex-direction:column;gap:10px}
+ .dgp-actions{max-width:100%;align-self:stretch;justify-content:flex-start}.dgp-number{align-items:flex-start}
+ .dgp-localRange{width:100%;justify-content:flex-start}.dgp-localRange input[type=range]{max-width:none}
+ .dgp-adapterActions{width:100%}.dgp-fieldError{text-align:left;max-width:100%}.dgp-libraryItem>.dgp-localButtons{width:100%;padding-left:58px}
+}
+@container dgp (max-width:480px){
+ .dgp-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.dgp-pageHeading{align-items:flex-start}
+ .dgp-pageHeading h2{font-size:20px}.dgp-saveState{max-width:34%}.dgp-runtime{padding:14px}
+ .dgp-runtimeHeading,.dgp-modelShortcut{flex-direction:column;align-items:stretch;gap:10px}.dgp-state{flex-direction:row;flex-wrap:wrap;align-items:center;max-width:100%}
+ .dgp-row{padding:12px}.dgp-libraryItem>.dgp-localButtons{padding-left:0}.dgp-localRange input[type=range]{width:100%;flex-basis:100%}
+ .dgp-modelShortcut>.dgp-button{align-self:flex-start}.dgp-libraryItems{margin:0 8px}
+}
+@media (prefers-reduced-motion:reduce){.dgp-page *{transition:none!important}}
+
 `
 
     /** Subscribe to one namespace's shared configuration form. */
@@ -891,10 +1083,10 @@ window.__ModuleLoader__.load({
           'aria-invalid': error !== '',
           onChange: (event) => { setDraft(event.target.value); setError('') },
           onFocus: () => setEditing(true),
-          onBlur: () => {
+          onBlur: (event) => {
             setEditing(false)
             if (skipBlur.current) { skipBlur.current = false; return }
-            commit()
+            if (!isSettingsNavigation(event)) commit()
           },
           onKeyDown: (event) => {
             if (event.key === 'Enter') {
@@ -928,7 +1120,7 @@ window.__ModuleLoader__.load({
     }
 
     /** One editable row: label, hint, control, and a reset when it overrides. */
-    function FieldRow({ spec, values, overrides, ready, writable, pendingKey, t, onSet, onReset }) {
+    function FieldRow({ spec, values, overrides, ready, writable, pendingKey, failure, t, onSet, onReset }) {
       const labelId = React.useId()
       const value = fieldValue(spec, values)
       const disabled = !ready || !writable || pendingKey === spec.key
@@ -942,6 +1134,7 @@ window.__ModuleLoader__.load({
         h('div', { className: 'dgp-text' }, [
           h('div', { className: 'dgp-label', id: labelId }, t('field.' + spec.key + '.label')),
           h('div', { className: 'dgp-hint' }, t('field.' + spec.key + '.hint')),
+          failure?.key === spec.key ? h('span', { className: 'dgp-fieldError', role: 'alert' }, failure.message) : null,
         ]),
         h('div', { className: 'dgp-actions' }, [
           control,
@@ -964,72 +1157,59 @@ window.__ModuleLoader__.load({
      * answer back into the shared configuration snapshot.
      */
     function GamePlayerSettings(props) {
-      const controller = props.controller
-      const t = typeof props.t === 'function' ? props.t : key => key
-      const state = useConfigForm(controller)
+      const controller=props.controller,t=typeof props.t==='function'?props.t:key=>key
+      const state=useConfigForm(controller)
       const desktop=props.overlay?React.useSyncExternalStore(props.overlay.subscribe,props.overlay.getSnapshot,props.overlay.getSnapshot):null
-      const [pendingKey, setPendingKey] = React.useState('')
-      const [failure, setFailure] = React.useState(null)
-
-      if (props.view === 'summary') return h('span', null, t('summary'))
-
-      const ready = state.status === 'ready'
-      const writable = state.writable !== false
-      const rawValues = ready && state.value !== null && typeof state.value === 'object' ? state.value : {}
+      const [pendingKey,setPendingKey]=React.useState(''),[failure,setFailure]=React.useState(null),[savedKey,setSavedKey]=React.useState('')
+      const [activeTab,setActiveTab]=React.useState('common'),[focusTab,setFocusTab]=React.useState('common')
+      const tabs=React.useRef({}),id=React.useId()
+      if(props.view==='summary')return h('span',null,t('summary'))
+      const ready=state.status==='ready',writable=state.writable!==false
+      const rawValues=ready&&state.value!==null&&typeof state.value==='object'?state.value:{}
       const values=desktop?.value?{...rawValues,overlayView:desktop.value.view??desktop.value.preferences?.view??rawValues.overlayView}:rawValues
-      const overrides = ready && state.user !== null && typeof state.user === 'object' ? state.user : {}
-
-      const perform = async (key, task, restoring) => {
-        setFailure(null)
-        setPendingKey(key)
-        try {
-          const saved = await task()
-          if (!saved) setFailure({ key, message: t(restoring ? 'resetFailed' : 'saveFailed') })
-        } catch (error) {
-          setFailure({ key, message: String(error?.message ?? error) })
-        } finally {
-          setPendingKey('')
-        }
+      const overrides=ready&&state.user!==null&&typeof state.user==='object'?state.user:{}
+      const perform=async(key,task,restoring)=>{
+        setFailure(null);setSavedKey('');setPendingKey(key)
+        try{const saved=await task();if(!saved)setFailure({key,message:t(restoring?'resetFailed':'saveFailed')});else setSavedKey(key)}
+        catch(error){setFailure({key,message:String(error?.message??error)})}
+        finally{setPendingKey(current=>current===key?'':current)}
       }
-      const set = (key, value) => perform(key, () => key==='overlayView'&&props.overlay&&value!=='auto'?props.overlay.command({type:'setDisplayView',view:value,revision:props.overlay.getSnapshot().value?.revision??0}):controller.set(key, value), false)
-      const reset = (key) => perform(key, () => controller.unset(key), true)
-
-      const groups = GROUPS.map((group) => h('section', { key: group.id, className: 'dgp-group' }, [
-        h('h3', { key: 'title', className: 'dgp-groupTitle' }, t('group.' + group.id)),
-        h('div', { key: 'list', className: 'dgp-list' }, group.fields.map((spec) => h(FieldRow, {
-          key: spec.key,
-          spec,
-          values,
-          overrides,
-          ready,
-          writable,
-          pendingKey,
-          t,
-          onSet: set,
-          onReset: reset,
-        }))),
-      ]))
-
-      const dangerous = ready && values.requireApproval === false
-      const status = !ready
-        ? (state.status === 'unavailable' ? t('unavailable') : t('loading'))
-        : (!writable ? t('readOnly') : (failure === null ? '' : failure.message))
-
-      return h('div', { className: 'dgp-page' }, [
-        h('style', { key: 'style' }, CSS),
-        dangerous
-          ? h('div', { key: 'danger', className: 'dgp-danger', role: 'alert' }, t('dangerBanner'))
-          : null,
-        groups[0],groups[1],
-        props.overlay?h(OverlayControls,{key:'desktop-management',manager:props.overlay,t}):null,
-        ...groups.slice(2),
-        status === ''
-          ? null
-          : h('p', {
-            key: 'status',
-            className: failure === null ? 'dgp-status' : 'dgp-status dgp-error',
-            role: failure === null ? undefined : 'alert',
-          }, status),
+      const set=(key,value)=>perform(key,()=>key==='overlayView'&&props.overlay&&value!=='auto'?props.overlay.command({type:'setDisplayView',view:value,revision:props.overlay.getSnapshot().value?.revision??0}):controller.set(key,value),false)
+      const reset=key=>perform(key,()=>controller.unset(key),true)
+      const groups=Object.fromEntries(GROUPS.map(group=>[group.id,h('section',{key:group.id,className:'dgp-group'},[
+        h('h3',{key:'title',className:'dgp-groupTitle'},t('group.'+group.id)),
+        h('div',{key:'list',className:'dgp-list'},group.fields.map(spec=>h(FieldRow,{key:spec.key,spec,values,overrides,ready,writable,pendingKey,failure,t,onSet:set,onReset:reset}))),
+      ])]))
+      const activate=key=>{setActiveTab(key);setFocusTab(key)}
+      const manageModels=()=>{activate('models');tabs.current.models?.focus()}
+      const keyboard=(event,key)=>{
+        const index=SETTINGS_TABS.indexOf(key)
+        const next=event.key==='Home'?0:event.key==='End'?SETTINGS_TABS.length-1:['ArrowRight','ArrowDown'].includes(event.key)?(index+1)%SETTINGS_TABS.length:['ArrowLeft','ArrowUp'].includes(event.key)?(index+SETTINGS_TABS.length-1)%SETTINGS_TABS.length:-1
+        if(next>=0){event.preventDefault();event.stopPropagation();setFocusTab(SETTINGS_TABS[next]);tabs.current[SETTINGS_TABS[next]]?.focus()}
+        else if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();activate(key)}
+      }
+      const overlay=section=>props.overlay?h(OverlayControls,{key:'desktop-'+section,section,manager:props.overlay,t,onManageModels:manageModels}):null
+      const content={common:[overlay('common'),groups.panel],models:[overlay('models')],appearance:[groups.keyboard,overlay('appearance')],safety:[groups.safety,groups.capture,groups.input]}
+      const dangerous=ready&&values.requireApproval===false
+      const status=!ready?t(state.status==='unavailable'?'unavailable':'loading'):!writable?t('readOnly'):failure?.message??''
+      return h('div',{className:'dgp-page'},[
+        h('style',{key:'style'},CSS),
+        h('header',{key:'heading',className:'dgp-pageHeading'},[
+          h('div',{key:'text',className:'dgp-text'},[h('h2',{key:'title'},t('sectionTitle')),h('p',{key:'subtitle',className:'dgp-hint'},t('page.subtitle'))]),
+          h('span',{key:'save',className:'dgp-saveState','aria-live':'polite'},pendingKey?t('saving'):failure?t('saveFailed'):!ready?t('page.'+(state.status==='unavailable'?'unavailable':'loading')):!writable?t('page.readOnly'):savedKey?t('page.saved'):t('page.autosave')),
+        ]),
+        dangerous?h('div',{key:'danger',className:'dgp-danger',role:'alert'},t('dangerBanner')):null,
+        status?h('p',{key:'status',className:failure?'dgp-status dgp-error':'dgp-status',role:failure?'alert':undefined},status):null,
+        overlay('status'),
+        h('div',{key:'tabs',className:'dgp-tabs',role:'tablist','aria-label':t('tabs.label')},SETTINGS_TABS.map(key=>h('button',{
+          key,id:id+'-tab-'+key,type:'button',role:'tab',className:'dgp-tab','aria-selected':activeTab===key,'aria-controls':id+'-panel-'+key,
+          tabIndex:focusTab===key?0:-1,'data-dgp-navigation':true,ref:node=>{tabs.current[key]=node},onFocus:()=>setFocusTab(key),onKeyDown:event=>keyboard(event,key),onClick:()=>activate(key),
+        },t('tabs.'+key)))),
+        // Panels remain mounted: tab navigation is presentation-only, never a command.
+        ...SETTINGS_TABS.map(key=>h('section',{key,id:id+'-panel-'+key,role:'tabpanel','aria-labelledby':id+'-tab-'+key,hidden:activeTab!==key,className:'dgp-tabPanel',tabIndex:0},[
+          h('p',{key:'intro',className:'dgp-panelHint'},t('page.'+key+'Hint')),
+          ...content[key],
+        ])),
       ])
     }
 
@@ -1038,10 +1218,10 @@ window.__ModuleLoader__.load({
       // exported so the test suite can cross-check them against the Host Config
       // schema without a browser; the module loader only reads `inject` and
       // `apply`.
-      GROUPS,
+      GROUPS, SETTINGS_TABS, GamePlayerSettings, NumberControl,
       OverlayUIController,
       LocalRange,
-      OverlayControls,
+      OverlayControls, ControlDisplaySettings,
       modelImportUnavailable, MotionControls, ModelCandidateControls, ModelAdapterControls, ModelLibraryControls, LibraryCandidateControls,
       locales: { zh, en },
       parseField,

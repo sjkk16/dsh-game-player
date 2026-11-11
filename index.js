@@ -23,7 +23,7 @@ import { MacroStore } from './src/macros.js'
 import { windowTool, macroTool } from './src/extra-tools.js'
 import { assertClient, clientActions } from './src/geometry.js'
 import { join, isAbsolute } from 'node:path'
-import { homedir } from 'node:os'
+import { DEFAULT_MACRO_STORAGE, resolveDataDirectory, prepareDataDirectory, resolveMacroStorage } from './src/data-directory.js'
 import { OverlayController } from './src/overlay.js'
 import { styleFor, THEMES, ACCENTS, LAYOUTS, SKINS, VIEWS, STYLE_DEFAULTS } from './src/keyboard-style.js'
 import Schema from '@deepseek-ai/schemastery'
@@ -35,9 +35,6 @@ export const name = 'game-player'
 
 /** Hard dependencies: without a tool registry or an attachment store the tools cannot work. */
 export const inject = ['tools', 'attachments']
-
-/** Where saved action templates live unless the configuration overrides it. */
-const DEFAULT_MACRO_STORAGE = join(process.env.LOCALAPPDATA ?? join(homedir(),'AppData','Local'),'dsh-game-player','macros.json')
 
 /** Defaults for every user-supplied configuration value. */
 const CONFIG_DEFAULTS = {
@@ -54,6 +51,7 @@ const CONFIG_DEFAULTS = {
   maxHoldMs: 3000,
   helperTimeoutMs: 15000,
   powershellPath: undefined,
+  dataDirectory: undefined,
   macroStoragePath: DEFAULT_MACRO_STORAGE,
 }
 
@@ -106,6 +104,8 @@ export const Config = Schema.object({
     .description('How long one helper request may take before it is abandoned.'),
   powershellPath: Schema.string()
     .description('Windows PowerShell executable used for the resident helper.'),
+  dataDirectory: Schema.string()
+    .description('Optional local plugin data directory. Relative paths resolve from the plugin directory; changing this requires reloading the plugin.'),
   macroStoragePath: Schema.string().default(DEFAULT_MACRO_STORAGE)
     .description('Absolute path of the saved action-template store.'),
 })
@@ -205,11 +205,15 @@ export function resolveConfig(raw, warn) {
       config.powershellPath = input.powershellPath
     }
   }
-  if(input.macroStoragePath!==undefined){if(typeof input.macroStoragePath!=='string'||!isAbsolute(input.macroStoragePath))reject('macroStoragePath','must be an absolute path');else config.macroStoragePath=input.macroStoragePath}
+  const dataDirectory = resolveDataDirectory(input.dataDirectory)
+  config.dataDirectory = input.dataDirectory === undefined ? undefined : dataDirectory
+  config.settingsPath = join(dataDirectory, 'overlay.json')
+  config.macroStoragePath = resolveMacroStorage(undefined, dataDirectory)
+  if(input.macroStoragePath!==undefined){if(typeof input.macroStoragePath!=='string'||!isAbsolute(input.macroStoragePath))reject('macroStoragePath','must be an absolute path');else config.macroStoragePath=resolveMacroStorage(input.macroStoragePath,dataDirectory)}
   // Volatile reads stay live: `options.overlayEnabled` must answer with the
   // value the Loader committed last, not with the apply-time snapshot.
   for (const key of Object.keys(live)) {
-    if (!Object.hasOwn(CONFIG_DEFAULTS, key)) continue
+    if (!Object.hasOwn(CONFIG_DEFAULTS, key) || key === 'dataDirectory') continue
     Object.defineProperty(config, key, { enumerable: true, get: () => readConfigValue(live[key]) })
   }
   return config
@@ -226,9 +230,13 @@ export function apply(ctx, config, runtime = {}) {
     else console.warn(message)
   }
   const options = resolveConfig(config, warn)
+  if (options.dataDirectory !== undefined) prepareDataDirectory(options.dataDirectory)
 
   const overlay = (runtime.overlayFactory ?? (options => new OverlayController(options)))({
     enabled: () => options.overlayEnabled, warn,
+    settingsPath: options.settingsPath,
+    // An isolated copy must never discover the original sibling model directory.
+    defaultModel: options.dataDirectory === undefined ? undefined : join(options.dataDirectory, 'unselected-default-model'),
     // The display runtime verifies WDA_EXCLUDEFROMCAPTURE before reporting it.
     // On supported systems this keeps the pet visible during screenshots; an
     // unverified runtime still falls back to acknowledged hide + DwmFlush.

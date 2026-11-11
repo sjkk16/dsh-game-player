@@ -41,3 +41,7 @@
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local manual-test instructions (not release/source artifacts)
+/TESTING.md
+/TEST-RESULTS.md

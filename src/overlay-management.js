@@ -86,7 +86,7 @@ export class OverlayManagement {
       ...o.runtime, renderer: o.renderer ?? o.runtime.renderer,
       phase: this.busy ?? o.runtime.phase, loading: this.load !== null || o.runtime.loading === true || o.runtime.phase === 'starting',
       ...this.models.snapshot(), ...this.motions.snapshot(), ...this.library.snapshot(), previewing: this.manualPreview !== null, error: this.lastError ?? o.runtime.error ?? o.lastError ?? null,
-      capabilities: { library:this.utilitySupportsLibrary&&existsSync(o.desktop), confirmedVisibility:native?o.capabilities.confirmedVisibility===true:this.utilitySupportsLibrary, archives: native?o.capabilities.archives===true:this.canDiscover(), adaptation:native?o.capabilities.adaptation===true:this.canDiscover(), handStyles:native?o.capabilities.handStyles===true:this.canDiscover(), management, model: native?o.capabilities.model===true:management, picker: existsSync(o.desktop), preview: o.enabled && this.canPreview(), motions: native?o.capabilities.motions===true:management, motionPreview:o.enabled&&this.canPreview()&&o.captureCount===0 },
+      capabilities: { adaptiveControl:native?o.capabilities.adaptiveControl===true:o.desktop===desktopExecutable()&&existsSync(o.desktop), modelInfoVisibility:native?o.capabilities.modelInfoVisibility===true:o.desktop===desktopExecutable()&&existsSync(o.desktop), library:this.utilitySupportsLibrary&&existsSync(o.desktop), confirmedVisibility:native?o.capabilities.confirmedVisibility===true:this.utilitySupportsLibrary, archives: native?o.capabilities.archives===true:this.canDiscover(), adaptation:native?o.capabilities.adaptation===true:this.canDiscover(), handStyles:native?o.capabilities.handStyles===true:this.canDiscover(), management, model: native?o.capabilities.model===true:management, picker: existsSync(o.desktop), preview: o.enabled && this.canPreview(), motions: native?o.capabilities.motions===true:management, motionPreview:o.enabled&&this.canPreview()&&o.captureCount===0 },
     }
     const signature=JSON.stringify(value);if(signature!==this.stateSignature){this.stateSignature=signature;this.stateRevision++}
     return {...value,stateRevision:this.stateRevision,stateGeneration:this.stateGeneration}
@@ -204,6 +204,8 @@ export class OverlayManagement {
   }
   async updatePreferences(patch,revision,signal) {
     const parsed=validatePreferenceRequest(patch),validated={...parsed};delete validated.modelAdapter
+    if(parsed.controlMode==='adaptive'&&this.overlay.ready&&!this.overlay.dead&&this.overlay.capabilities.adaptiveControl!==true)throw preferenceError('unsupported','Control adaptive mode requires the 0.3.10 desktop runtime.')
+    if('modelInfoVisible'in parsed&&this.overlay.ready&&!this.overlay.dead&&this.overlay.capabilities.modelInfoVisibility!==true)throw preferenceError('unsupported','Model text visibility requires the 0.3.10 desktop runtime.')
     if(['modelPath','profilePath','keyboardImage'].some(key=>key in validated))throw preferenceError('invalid_preferences','Use the import/clear commands to change local resource paths.')
     if(parsed.modelAdapter){
       this.requireEnabled();if(this.busy||this.load||this.manualPreview||this.motions.active)throw preferenceError('busy','Finish or cancel the current display operation first.')
@@ -266,7 +268,7 @@ export class OverlayManagement {
       if(modelChange){if(signal.aborted&&staged)await o.command({kind:'cancel-load'}).catch(()=>{});this.load=null;this.busy=null;try{if(!shown){if(showAfterCommit&&!wasRunning&&displayIntent!==undefined&&o.activity===displayIntent)await o.stopDisplay();else await this.retireTemporary(wasRunning,activity)}}finally{o.deferModelStartup--;releaseVisibility?.()}}
     }
   }
-  /** Remove a selection without trying to load a missing default or another library model. */
+  /** Remove a selection without loading a missing default or another model. */
   async clearModelSelection(revision, signal) {
     signal=this.signal(signal);signal.throwIfAborted()
     if(this.load||this.manualPreview||this.motions.active)throw preferenceError('busy','Finish or cancel the current display operation first.')

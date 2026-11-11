@@ -2,7 +2,7 @@ import { desktopDotnet } from './desktop-dotnet.mjs'
 import { DESKTOP_RUNTIME_DIRECTORY } from '../src/desktop-runtime.js'
 // Offline build: never downloads SDKs or models. The official SDK archive is
 // acquired separately, with its license, then verified here against our pin.
-import { readFile,writeFile,mkdir,copyFile,readdir,cp,access } from 'node:fs/promises'
+import { readFile,writeFile,mkdir,copyFile,readdir,cp,access,unlink } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { join,resolve,dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -27,8 +27,11 @@ if(out!==join(root,DESKTOP_RUNTIME_DIRECTORY)&&!out.startsWith(join(root,'.qa')+
 const dotnet=await desktopDotnet()
 const restored=spawnSync(dotnet.executable,['restore',join(root,'desktop/GamePlayer.Desktop.csproj'),'--locked-mode','--configfile',dotnet.config,'--nologo'],{stdio:'inherit',windowsHide:true,env:dotnet.env})
 if(restored.error)throw restored.error;if(restored.status!==0)throw Error('Locked restore failed')
-const run=spawnSync(dotnet.executable,['publish',join(root,'desktop/GamePlayer.Desktop.csproj'),'-c','Release','--no-restore','-o',out,'--nologo','-v:q'],{stdio:'inherit',windowsHide:true,env:dotnet.env})
+const run=spawnSync(dotnet.executable,['publish',join(root,'desktop/GamePlayer.Desktop.csproj'),'-c','Release','--no-restore','-p:DebugType=None','-p:DebugSymbols=false','-o',out,'--nologo','-v:q'],{stdio:'inherit',windowsHide:true,env:dotnet.env})
 if(run.error)throw run.error;if(run.status!==0)throw Error('Desktop publish failed')
+// Only debug sidecars and unnecessary WebView2 API documentation are removed.
+// The output boundary was checked above; no recursive removal or model access.
+for(const name of await readdir(out))if(/\.pdb$/i.test(name)||/^Microsoft\.Web\.WebView2\.[^/]+\.xml$/i.test(name))await unlink(join(out,name))
 for(const name of ['key-map.json','overlay-layout.json'])await copyFile(join(root,'src',name),join(out,name))
 await mkdir(join(out,'licenses'),{recursive:true})
 for(const [input,name] of [['LICENSE.md','Live2D-SDK.md'],['NOTICE.md','Live2D-NOTICE.md'],['Core/LICENSE.md','Live2D-Core.md'],['Core/RedistributableFiles.txt','Core-RedistributableFiles.txt'],['Framework/LICENSE.md','Live2D-Framework.md']])await copyFile(join(sdk,input),join(out,'licenses',name))

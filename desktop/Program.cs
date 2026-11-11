@@ -83,6 +83,7 @@ internal sealed partial class PetWindow : Window {
         };
         lifeTimer.Tick += (_, _) => {
             if (eof || parent.HasExited) { Close(); return; }
+            SyncControlObserver();
             if (startup.Expired(DateTime.UtcNow)) RuntimeFailed("Renderer startup timed out (25 s) during " + startup.Stage + "; cache: " + (cacheDirectory ?? settingsPath), "runtime_start_timeout");
             else if(showPending&&DateTime.UtcNow>showDeadline){CancelShow();RuntimeFailed("Renderer could not prepare the latest frame for display.","renderer_frame_timeout","frame");}
             else if (loading && DateTime.UtcNow > loadDeadline) {
@@ -94,10 +95,10 @@ internal sealed partial class PetWindow : Window {
         Closed += (_, _) => Cleanup();
     }
     IntPtr Hook(IntPtr h, int msg, IntPtr wp, IntPtr lp, ref bool handled) {
-        if (msg == 0x2b1) CursorSessionChanged(wp.ToInt32());
+        if (msg == 0x2b1) { CursorSessionChanged(wp.ToInt32()); SyncControlObserver(); }
         if (msg == 0x21) { handled = true; return new IntPtr(3); }
         if (msg == 0x84 && !adjusting) { handled = true; return new IntPtr(-1); }
-        if (msg == 0x2e0) Dispatcher.BeginInvoke(() => { Place(); AnnounceBounds(); });
+        if (msg == 0x2e0 || msg == 0x7e) Dispatcher.BeginInvoke(() => { humanObserver?.RefreshBounds(); Place(); AnnounceBounds(); });
         return IntPtr.Zero;
     }
     void Output(object value) { lock (outputLock) { Console.Out.WriteLine(JsonSerializer.Serialize(value)); Console.Out.Flush(); } }
@@ -188,7 +189,7 @@ internal sealed partial class PetWindow : Window {
         }catch(Exception e){Warn((managed ? "Private cache cleanup deferred until display exit: " : "Private renderer cache retained: ")+e.Message+"; "+cacheDirectory);/* Never broaden the cleanup target. */}
     }
     void Cleanup() {
-        if (dead) return; dead = true; loadTicket++; lifeTimer.Stop(); keyboardTimer.Stop(); DisposeCursorGaze(); Hide();
+        if (dead) return; dead = true; loadTicket++; lifeTimer.Stop(); keyboardTimer.Stop(); StopControlObserver(); DisposeCursorGaze(); Hide();
         keyboard?.Hide(); keyboard?.Dispose(); tray?.Dispose();
         if (qa && environment != null) try { File.WriteAllText(Path.Combine(qaDir!, "browser-pids.json"), JsonSerializer.Serialize(environment.GetProcessInfos().Select(p => p.ProcessId).ToArray())); } catch { }
         DisposeRenderer(); parent.Dispose(); package = pendingPackage = null;
@@ -201,6 +202,7 @@ internal static class Program {
             var a = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i + 1 < args.Length; i += 2) a[args[i]] = args[i + 1];
             Console.InputEncoding = new UTF8Encoding(false); Console.OutputEncoding = new UTF8Encoding(false);
+            if (a.ContainsKey("--qa-control-selftest")) return AdaptiveControlQa.Run();
             Native.InitializeDpi();
             if (a.ContainsKey("--pick") || a.ContainsKey("--validate-skin") || a.ContainsKey("--discover-model") || a.ContainsKey("--describe-model-source")) return DesktopUtility.Run(a);
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };

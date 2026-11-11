@@ -21,6 +21,7 @@ export class OverlayMotions {
   }
   event(message){
     const a=this.active;if(!a)return
+    if(message.kind==='human-input'){a.controller.abort(preferenceError('canceled','Human input interrupted only the visual preview.'));return}
     if(message.kind==='capture-hidden'){a.controller.abort(canceled());return}
     if(message.kind==='unavailable'){a.controller.abort(preferenceError('unavailable','The motion renderer stopped.'));return}
     if(message.ticket===a.ticket&&message.token===a.token){if(message.reason==='hidden'){a.hiddenByRuntime=true;a.hiddenState=this.overlay.runtime.userHidden;}a.finish(message)}

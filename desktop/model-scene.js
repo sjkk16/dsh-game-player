@@ -58,7 +58,7 @@ export class ModelScene {
    s.handCache=new HandImageCache(manifest.hands??[],image,{onReady:()=>s.onHandReady()});s.hands=manifest.hands??[]
    signal.throwIfAborted();s.resetFrame();c.update();s.bounds=s.drawableBounds();s.baseBounds={...s.bounds}
    s.validateEffects();s.calibrateCursorHandAxes();s.cursorHandBounds=s.measureCursorHandBounds();if(manifest.layout.autoFrame)s.bounds={...s.cursorHandBounds};s.baseBounds={...s.bounds};await s.loadMotions(signal);s.resetFrame();c.update();
-    c.update();return s
+    return s
   }catch(e){s.release();throw e}
  }
  apply(values){const c=this.model.core();for(const id in values){const p=this.parameters[id];if(p)c.setParameterValueByIndex(this.parameterIndices[id],clamp(Number.isFinite(values[id])?values[id]:p.default,p.min,p.max))}}

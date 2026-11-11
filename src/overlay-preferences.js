@@ -6,7 +6,7 @@ import { validateAdapterChange } from './live2d/model-adapter.js'
 
 export const PREFERENCE_DEFAULTS = Object.freeze({
   version: 5, globalAdapter: Object.freeze({}), view: 'model', modelPath: null, profilePath: null, modelEntry: null, modelOverrides: Object.freeze({}), keyboardImage: null,
-  widthDip: 420, keyboardWidthDip: 900, opacity: 1, x: null, y: null,
+  widthDip: 420, keyboardWidthDip: 900, opacity: 1, x: null, y: null, controlMode: 'ai-only', modelInfoVisible: true,
 })
 const ranges = { widthDip: [220, 1000], keyboardWidthDip: [450, 1350], opacity: [.45, 1] }
 const paths = new Set(['modelPath', 'profilePath', 'keyboardImage'])
@@ -42,6 +42,10 @@ export function validatePreferencePatch(patch) {
         records[id]=checked
       }
       result[key]=records;continue
+    } else if (key === 'controlMode') {
+      if (!['ai-only','adaptive'].includes(value)) throw preferenceError('invalid_preferences', 'Invalid control mode.')
+    } else if (key === 'modelInfoVisible') {
+      if (typeof value !== 'boolean') throw preferenceError('invalid_preferences', 'modelInfoVisible must be boolean.')
     } else if (key === 'view') {
       if (!['model', 'keyboard'].includes(value)) throw preferenceError('invalid_preferences', 'Invalid saved view.')
     } else if (key === 'x' || key === 'y') {

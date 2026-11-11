@@ -41,5 +41,5 @@ export function displayText(s) {
   if(s.wheelMs>0)parts.push(s.wheelDirection<0?'滚轮 ↓':'滚轮 ↑')
   const released=(s.pulses??[]).filter(p=>p.ms>0).filter(p=>p.id?.startsWith('key:')?!s.keys?.includes(p.id.slice(4)):p.id?.startsWith('button:')?!s.buttons?.includes(p.id.slice(7)):false).map(p=>p.id.startsWith('key:')?p.id.slice(4):(labels[p.id.slice(7)]??'鼠标'))
   if(released.length)parts.push('已释放 '+[...new Set(released)].join(' + ')+' · 余光')
-  return parts.join(' · ')||'待命 · 仅显示本插件的操作'
+  return parts.join(' · ')||(s.controlMode==='adaptive'?'未检测到新的键鼠动作 · 上方保留最后操作者':'待命 · 仅显示本插件的操作')
 }

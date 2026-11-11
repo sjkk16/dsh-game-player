@@ -4,6 +4,7 @@ import { FrameScheduler } from './frame-scheduler.js'
 import { displayText } from '../src/live2d/adapter.js'
 import { FrameDiagnostics } from './frame-diagnostics.js'
 import { CursorProgress } from './cursor-progress.js'
+import { actorText } from '../src/live2d/control-labels.js'
 const cursorProgress=new CursorProgress()
 const host = window.chrome.webview, canvas = document.querySelector('#model'), hands = document.querySelector('#hands')
 const handContext=hands.getContext('2d')
@@ -12,7 +13,8 @@ const notify = value => host.postMessage(value)
 let gl, active, candidate, loadController, generation = 0, disposed = false, lost = false
 let state = { mode:'simulation',keys:[],buttons:[],status:'ready' }, stateAt = performance.now(), expiryTimer
 let rendered = 0, labels = '', keys, queue = Promise.resolve(), showGeneration = 0, handStatus = ''
-let diagnostics=null, privateRun=null
+let diagnostics=null, privateRun=null, modelInfoVisible=true
+const footer=document.querySelector('footer')
 const resizeObserver = new ResizeObserver(()=>scheduler.touch())
 const scheduler = new FrameScheduler((now, dt) => { try { draw(now, dt) } catch (error) { report(error) } })
 function effective(now = performance.now()) {
@@ -24,10 +26,16 @@ function effective(now = performance.now()) {
 }
 function updateLabels(now = performance.now()) {
   const current = effective(now), missing = active?.pose?.missing ?? []
-  const values = [current.mode==='simulation'?'模拟预览 · 未操作电脑':'真实 AI 输入',displayText(current),missing.length?'模型未提供：'+missing.join(' / '):'',current.mode,['unknown','locked'].includes(current.status),current.pulses.some(p=>p.ms>0)]
+  const adaptive=current.controlMode==='adaptive',warning=['unknown','locked'].includes(current.status)
+  const notes=[adaptive&&current.mode==='simulation'?'模拟预览 · 非真实操作':'',current.externalInput?'外部输入 / 未知': '',current.humanError??''].filter(Boolean).join(' · ')
+  const values = [adaptive?actorText(current.lastActor):current.mode==='simulation'?'模拟预览 · 未操作电脑':'真实 AI 输入',displayText(current),missing.length?'模型未提供：'+missing.join(' / '):'',current.mode,warning,current.pulses.some(p=>p.ms>0),modelInfoVisible,notes,adaptive]
   const next = JSON.stringify(values)
   if (next === labels) return
   labels = next; identity.textContent = values[0]; activity.textContent = values[1]; capabilities.textContent = values[2]
+  identity.title=adaptive?'最后识别的真实输入来源，不表示仍在持续输入；仅显示、不控制电脑':''
+  document.querySelector('#control-notes').textContent=notes
+  document.body.classList.toggle('hide-model-info',!modelInfoVisible)
+  footer.setAttribute('aria-hidden',String(!modelInfoVisible&&!warning));capabilities.setAttribute('aria-hidden',String(!modelInfoVisible))
   document.body.style.setProperty('--accent',current.mode==='simulation'?'#ffb753':'#49dfbe')
   document.body.classList.toggle('warning',values[4]);document.body.classList.toggle('pulse',values[5])
 }
@@ -149,11 +157,12 @@ window.addEventListener('error',event=>report(event.message));window.addEventLis
 resizeObserver.observe(document.querySelector('main'))
 host.addEventListener('message',event=>{
   const message=event.data
-  if(message.kind==='cursor-gaze-control'){
+  if(message.kind==='display-preferences'){if(typeof message.modelInfoVisible==='boolean'){modelInfoVisible=message.modelInfoVisible;updateLabels()}}
+  else if(message.kind==='cursor-gaze-control'){
     if(!disposed&&!lost)cursorProgress.control(message,active?.manifest.token)
   }else if(message.kind==='cursor-gaze'){
     // Separate display channel: never touch state/stateAt, labels, previews or motion ownership.
-    if(!disposed&&!lost&&(scheduler.visible||active?.manifest.qa)&&active?.cursorGaze.accept(message))identity.title='系统鼠标驱动可用的头部与手部位置参数；未知/锁定时暂停 · 仅显示'
+    if(!disposed&&!lost&&(scheduler.visible||active?.manifest.qa)&&active?.cursorGaze.accept(message))identity.title=state.controlMode==='adaptive'?'最后识别的真实输入来源，不表示仍在持续输入；仅显示':'系统鼠标驱动可用的头部与手部位置参数；未知/锁定时暂停 · 仅显示'
     if(Number.isSafeInteger(message.sequence)&&typeof message.token==='string')notify({kind:'cursor-gaze-ack',token:message.token,sequence:message.sequence})
   }else if(message.kind==='state'){
     if(message.mode!=='simulation'||['unknown','locked'].includes(message.status))stopMotion('real-input')

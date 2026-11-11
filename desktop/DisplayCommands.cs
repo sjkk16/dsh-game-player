@@ -119,7 +119,7 @@ internal sealed partial class PetWindow {
             var message = JsonNode.Parse(raw)!.AsObject(); string? kind = message["kind"]?.GetValue<string>();
             if (kind == "web-ready") {
                 if (!startup.Pending || webReady) return;
-                startup.Complete(); webReady = true;
+                startup.Complete(); webReady = true; PushDisplayPreferences();
                 var selected = ModelLoadSelection.Resolve(settings.ModelPath, defaultModel);
                 if (deferModel || selected == null) { loading = false; Ready(); VisibleGate(); }
                 else await BeginLoad(selected, settings.ProfilePath, entry: settings.ModelEntry);

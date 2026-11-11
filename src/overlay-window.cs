@@ -48,6 +48,7 @@ public sealed class GamePlayerOverlay : Form {
     double widthDip=900, opacityValue=.85;
     // Appearance. The defaults are the shipped dark palette; a style payload
     // replaces them one color at a time, so a partial payload never blanks out.
+    string controlMode="ai-only",lastActor="",controlNotes="";
     string theme="dark", accent="teal", layout="full", skin="builtin", skinPath;
     Color surface=Color.FromArgb(17,23,34), ink=Color.FromArgb(230,237,246), muted=Color.FromArgb(135,149,169);
     Color keyFill=Color.FromArgb(31,41,57), keyEdge=Color.FromArgb(57,71,90);
@@ -283,6 +284,7 @@ public sealed class GamePlayerOverlay : Form {
     }
     void State(Dictionary<string,object> s) {
         lastStateAt=Now();
+        controlMode=Str(s,"controlMode","ai-only");lastActor=Str(s,"lastActor");controlNotes=(Bool(s,"externalInput")?"外部输入 / 未知":"")+(Str(s,"humanError").Length>0?" · "+Str(s,"humanError"):"");
         mode=Str(s,"mode","real");simulation=mode=="simulation";status=Str(s,"status","ready");hint=Str(s,"hint");
         held.Clear();foreach(var k in Items(s,"keys"))held.Add(Convert.ToString(k));
         buttons.Clear();foreach(var k in Items(s,"buttons"))buttons.Add(Convert.ToString(k));
@@ -376,9 +378,10 @@ public sealed class GamePlayerOverlay : Form {
                 g.FillRectangle(band,contentLeft,footerTop-4,canvasWidth,contentTop+canvasHeight-footerTop+4);
             }
         }
-        TextAt(g,"AI INPUT",new RectangleF(contentLeft+20,contentTop+14,145,32),22,accent,false,true);
-        TextAt(g,simulation?"模拟预览 · 未操作电脑":"真实 AI 输入",new RectangleF(contentLeft+170,contentTop+16,360,28),17,ink);
+        TextAt(g,controlMode=="adaptive"?"控制输入":"AI INPUT",new RectangleF(contentLeft+20,contentTop+14,145,32),22,accent,false,true);
+        TextAt(g,controlMode=="adaptive"?(lastActor=="human"?"人控制":lastActor=="ai"?"AI控制":"控制自适应模式"):simulation?"模拟预览 · 未操作电脑":"真实 AI 输入",new RectangleF(contentLeft+170,contentTop+16,360,28),17,ink);
         string stat=status=="locked"?"输入已锁定 · 需重新加载":status=="unknown"?"状态未知 / 释放未确认":status=="syncing"?"同步中 · 已恢复最新状态":status=="releasing"?"正在释放":"仅显示本插件的 AI 操作";
+        if(controlMode=="adaptive"&&status=="ready")stat=(simulation?"模拟预览 · 非真实操作":controlNotes.Length>0?controlNotes:"最后识别的输入来源 · 不表示持续输入");
         float statusX=Math.Min(contentLeft+570,contentLeft+canvasWidth-20-448);
         TextAt(g,stat,new RectangleF(statusX,contentTop+16,448,28),14,(status=="unknown"||status=="locked")?Color.Salmon:muted);
         using(var pen=new Pen(keyEdge))g.DrawLine(pen,contentLeft+20,contentTop+55,contentLeft+canvasWidth-20,contentTop+55);

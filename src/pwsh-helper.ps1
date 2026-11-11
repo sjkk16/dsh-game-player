@@ -267,14 +267,23 @@ function Invoke-Input($request) {
         $target=[GamePlayerWindow]::Get([string]$request.window.windowId)
         foreach($field in @('x','y','width','height')){if($request.window.client.$field -ne $target.client.$field){throw 'Target geometry changed before injection.'}}
     }
-    foreach($a in $request.actions){
-        foreach($pair in @(@('x','y'),@('fromX','fromY'))){if($null -ne $a.($pair[0])){[GamePlayerWindow]::Point($target,[int]$a.($pair[0]),[int]$a.($pair[1]))}}
-        if($a.kind -in @('down','scroll') -or ($a.kind -eq 'click' -and $null -eq $a.x)){$p=[GamePlayerNative]::Cursor();[GamePlayerWindow]::Point($target,$p.X,$p.Y)}
-    }
     $repeat=[int](Default-Field $request.repeat 1)
+    $all=@();for($round=0;$round -lt $repeat;$round++){$all+= $request.actions}
+    # Predict pointer position over the exact execution sequence without sending events.
+    # Native execution still rechecks the live pointer, target, focus and occlusion.
+    $initialCursor=[GamePlayerNative]::Cursor()
+    $predictedX=$initialCursor.X; $predictedY=$initialCursor.Y
+    foreach($a in $all){
+        foreach($pair in @(@('x','y'),@('fromX','fromY'))){if($null -ne $a.($pair[0])){[GamePlayerWindow]::Point($target,[int]$a.($pair[0]),[int]$a.($pair[1]))}}
+        if($a.kind -in @('move','drag') -or ($a.kind -eq 'click' -and $null -ne $a.x)){
+            $predictedX=[int]$a.x; $predictedY=[int]$a.y
+        }
+        if($a.kind -in @('down','scroll') -or ($a.kind -eq 'click' -and $null -eq $a.x)){
+            [GamePlayerWindow]::Point($target,$predictedX,$predictedY)
+        }
+    }
     [InputSession]::Begin([int]$ownerId,$maxHold,$target,($repeat -gt 1 -or $request.standalone -eq $true))
     $script:ExecutingInput=$true
-    $all=@();for($round=0;$round -lt $repeat;$round++){$all+= $request.actions}
     foreach($a in $all) {
         $button=[string](Default-Field $a.button 'left')
         switch($a.kind) {

@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-game-player",
-  "version": "0.3.8",
+  "version": "0.3.10",
   "private": true,
   "type": "module",
   "description": "Give the model a virtual mouse and keyboard plus a live view of the screen, so it can play a windowed game.",
@@ -38,13 +38,13 @@
     "desktop/web/*.css",
     "scripts/*.mjs",
     "scripts/sdk-files.json",
-    "runtime/desktop-0.3.8/*.exe",
-    "runtime/desktop-0.3.8/*.dll",
-    "runtime/desktop-0.3.8/*.json",
-    "runtime/desktop-0.3.8/web/**/*",
-    "runtime/desktop-0.3.8/profiles/*.json",
-    "runtime/desktop-0.3.8/licenses/*",
-    "runtime/desktop-0.3.8/runtimes/**/native/*.dll"
+    "runtime/desktop-0.3.10/*.exe",
+    "runtime/desktop-0.3.10/*.dll",
+    "runtime/desktop-0.3.10/*.json",
+    "runtime/desktop-0.3.10/web/**/*",
+    "runtime/desktop-0.3.10/profiles/*.json",
+    "runtime/desktop-0.3.10/licenses/*",
+    "runtime/desktop-0.3.10/runtimes/**/native/*.dll"
   ],
   "dsh": {
     "bundle": {
@@ -66,7 +66,11 @@
     "test:release": "node scripts/check-package.mjs --runtime",
     "build:live2d": "node scripts/build-live2d.mjs",
     "test:regression": "node scripts/feature-regression.mjs",
-    "test:library": "node scripts/model-library-regression.mjs"
+    "test:adaptive": "node scripts/adaptive-regression.mjs",
+    "test:watermark-removal": "node scripts/watermark-removal-regression.mjs",
+    "test:data-directory": "node scripts/data-directory-regression.mjs",
+    "test:library": "node scripts/model-library-regression.mjs",
+    "test:native-isolation": "node scripts/native-isolation-smoke.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.12"

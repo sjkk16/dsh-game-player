@@ -16,7 +16,7 @@ internal sealed partial class PetWindow {
     }
     long showTicket;bool showPending,showPrepared;string? preparedInputKey;DateTime showDeadline;
     JsonObject? ShowSnapshot(){lock(inboxLock)return (latest??state)?.DeepClone() as JsonObject;}
-    static string InputKey(JsonObject? snapshot){var key=new JsonObject();foreach(var name in new[]{"mode","status","keys","buttons","position"})key[name]=snapshot?[name]?.DeepClone();return key.ToJsonString();}
+    static string InputKey(JsonObject? snapshot){var key=new JsonObject();foreach(var name in new[]{"mode","status","keys","buttons","position","controlMode","lastActor"})key[name]=snapshot?[name]?.DeepClone();return key.ToJsonString();}
     bool PrepareShow(){
         var snapshot=ShowSnapshot();string key=InputKey(snapshot)+"\0"+package?.Token;
         if(showPrepared&&preparedInputKey==key)return true;

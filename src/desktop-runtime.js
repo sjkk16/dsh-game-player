@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { dirname, join, resolve, win32 } from 'node:path'
 import { fileURLToPath } from 'node:url'
 // Version-isolated runtime: never replace binaries mapped by a running Host.
-export const DESKTOP_RUNTIME_DIRECTORY='runtime/desktop-0.3.8'
+export const DESKTOP_RUNTIME_DIRECTORY='runtime/desktop-0.3.10'
 export const desktopExecutable=()=>join(dirname(fileURLToPath(import.meta.url)),'..',DESKTOP_RUNTIME_DIRECTORY,'GamePlayer.Desktop.exe')
 
 /**

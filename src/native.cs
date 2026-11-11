@@ -114,6 +114,7 @@ public static class GamePlayerNative
     public const int SM_CXVIRTUALSCREEN = 78;
     public const int SM_CYVIRTUALSCREEN = 79;
 
+    public const long InputSourceTag = 0x44534847; // render attribution only, never proof of successful input
     public static bool Recording;
     public static int RecordedX, RecordedY;
     [DllImport("user32.dll", SetLastError = true)]
@@ -144,11 +145,13 @@ public static class GamePlayerNative
         INPUT input = new INPUT(); input.type = INPUT_MOUSE;
         input.data.mi.dx = dx; input.data.mi.dy = dy;
         input.data.mi.dwFlags = flags; input.data.mi.mouseData = unchecked((uint)data);
+        input.data.mi.dwExtraInfo = new IntPtr(InputSourceTag);
         return input;
     }
     public static INPUT KeyEvent(ushort vk, ushort scan, uint flags) {
         INPUT input = new INPUT(); input.type = INPUT_KEYBOARD;
         input.data.ki.wVk = vk; input.data.ki.wScan = scan; input.data.ki.dwFlags = flags;
+        input.data.ki.dwExtraInfo = new IntPtr(InputSourceTag);
         return input;
     }
     internal static void Inject(INPUT input) {

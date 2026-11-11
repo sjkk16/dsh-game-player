@@ -10,6 +10,8 @@ public sealed class OverlaySettings {
     public int Version { get; set; }=4;
     public long Revision { get; set; }=0;
     public string View { get; set; }="model";
+    public string ControlMode { get; set; }="ai-only";
+    public bool ModelInfoVisible { get; set; }=true;
     public string? ModelPath { get; set; }
     public string? ProfilePath { get; set; }
     public string? ModelEntry { get; set; }
@@ -29,12 +31,14 @@ public sealed class OverlaySettings {
         // Migration retains location and opacity, not the unfinished white-cat size.
         if(s.View=="bongo"||JsonNode.Parse(json)?["version"]?.GetValue<int>()<3){s.View=s.View=="keyboard"?"keyboard":"model";s.KeyboardWidthDip=s.WidthDip;s.WidthDip=420;}
         if(s.View!="keyboard")s.View="model";
+        if(s.ControlMode!="adaptive")s.ControlMode="ai-only";
         s.Version=4;s.WidthDip=Clamp(s.WidthDip,220,1000,420);s.KeyboardWidthDip=Clamp(s.KeyboardWidthDip,450,1350,900);s.Opacity=Clamp(s.Opacity,.45,1,1);return s;
     }
     public static OverlaySettings FromJson(string json) {
         var s=JsonSerializer.Deserialize<OverlaySettings>(json,Options)??throw new InvalidDataException("Invalid preferences.");
         if(!double.IsFinite(s.WidthDip)||s.WidthDip<220||s.WidthDip>1000||!double.IsFinite(s.KeyboardWidthDip)||s.KeyboardWidthDip<450||s.KeyboardWidthDip>1350||!double.IsFinite(s.Opacity)||s.Opacity<.45||s.Opacity>1)throw new InvalidDataException("Preferences outside display limits.");
         if(s.View!="model"&&s.View!="keyboard")throw new InvalidDataException("Invalid saved view.");
+        if(s.ControlMode!="ai-only"&&s.ControlMode!="adaptive")throw new InvalidDataException("Invalid control mode.");
         if(s.X is int x&&Math.Abs((long)x)>1000000||s.Y is int y&&Math.Abs((long)y)>1000000)throw new InvalidDataException("Invalid display position.");
         s.Version=4;return s;
     }

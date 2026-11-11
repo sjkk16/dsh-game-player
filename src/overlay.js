@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { InputDisplayState, InputPreview } from './overlay-state.js'
+import { AdaptiveDisplayState } from './control-adaptive.js'
 import { resolvePowershell } from './pwsh-bridge.js'
 import { OverlayPreferences } from './overlay-preferences.js'
 import { cleanupOverlayCache } from './overlay-cache.js'
@@ -45,9 +46,21 @@ export class OverlayController {
     this.visibilityHolds=0;this.deferModelStartup=0;this.nativeCaches=new WeakMap()
     this.runtime={phase:'not-started',renderer:null,visible:false,userHidden:false,adjusting:false,modelLoaded:false,loading:false,error:null}
     this.onActivity=undefined;this.onPreferences=undefined;this.onRealObservation=undefined;this.onMotionEvent=undefined
+    this.adaptive=new AdaptiveDisplayState(options.now);this.displayPreferences=null
+    this.adaptiveTimer=setInterval(()=>{if(!this.closed&&this.ready&&!this.dead&&this.controlMode()==='adaptive')this.changed()},250);this.adaptiveTimer.unref?.()
   }
   get enabled() { return this.enabledSource()!==false }
-  observe(message) { if(!this.enabled||this.closed)return;if(this.realState.accept(message)){this.onRealObservation?.(message);if(this.state===this.realState)this.changed()} }
+  controlMode(){return this.capabilities.adaptiveControl===true?(this.displayPreferences??this.preferences.value).controlMode:'ai-only'}
+  observe(message) { if(!this.enabled||this.closed)return;if(this.realState.accept(message)){this.adaptive.observeAI(message,this.realState);this.onRealObservation?.(message);if(this.state===this.realState||this.controlMode()==='adaptive')this.changed()} }
+  observeHuman(message){
+    if(!this.enabled||this.closed||this.capabilities.adaptiveControl!==true)return
+    if(this.adaptive.observeHuman(message)){
+      if(message.source==='human'&&['down','up','move','wheel'].includes(message.event)){
+        this.preview.stop();if(this.state===this.previewState)this.state=this.realState;this.onMotionEvent?.({kind:'human-input'})
+      }
+      this.changed()
+    }
+  }
   beginReal() {
     if(!this.enabled||this.closed)return
     if(this.stopping){this.activity++;this.pendingActivity={kind:'real'};this.onActivity?.();this.preview.stop();this.state=this.realState;this.changed();return}
@@ -65,7 +78,7 @@ export class OverlayController {
   }
   changed() {
     if(this.captureCount>0)this.onMotionEvent?.({kind:'capture-hidden'})
-    const value=this.state.snapshot()
+    const value=this.controlMode()==='adaptive'?this.adaptive.snapshot(this.realState.snapshot(),this.state.snapshot()):this.state.snapshot()
     if(!this.ready&&this.child&&this.state===this.realState){
       for(const p of value.pulses)this.startupPulses.add(p.id)
       if(value.moveMs>0)this.startupMove=true;if(value.textMs>0)this.startupText=true;if(value.wheelMs>0)this.startupWheel=value.wheelDirection
@@ -158,10 +171,13 @@ export class OverlayController {
     for(;;){const at=this.buffer.indexOf('\n');if(at<0)return;const line=this.buffer.slice(0,at);this.buffer=this.buffer.slice(at+1)
       try {
         const message=JSON.parse(line)
+        if(message.kind==='human-observation'||message.kind==='human-observer-status'){this.observeHuman(message);continue}
         if(message.kind==='warning'&&typeof message.message==='string'){this.warn('game player: '+message.message.slice(0,2048));continue}
         if(message.kind==='bounds'){this.setBounds(message.bounds);continue}
         if(message.kind==='affinity'&&typeof message.affinitySupported==='boolean'){this.affinity=message.affinitySupported;continue}
         if(message.kind==='status'&&message.state&&typeof message.state==='object'){
+          if(typeof message.state.adaptiveControlCapable==='boolean')this.capabilities.adaptiveControl=message.state.adaptiveControlCapable
+          if(typeof message.state.modelInfoVisibilityCapable==='boolean')this.capabilities.modelInfoVisibility=message.state.modelInfoVisibilityCapable
           if(typeof message.state.modelCapable==='boolean')this.capabilities.model=message.state.modelCapable
           if(typeof message.state.motionCapable==='boolean')this.capabilities.motions=message.state.motionCapable
           if(typeof message.state.adaptationCapable==='boolean')this.capabilities.adaptation=message.state.adaptationCapable
@@ -264,7 +280,7 @@ export class OverlayController {
         if(this.protocolVersion>=3)void this.command({kind:'cancel',target:id},{timeoutMs:2000}).catch(()=>{})
       }
       timer=setTimeout(()=>{cleanup();reject(new Error('Overlay command timed out.'));if(this.protocolVersion>=3)void this.command({kind:'cancel',target:id},{timeoutMs:2000}).catch(()=>{})},timeoutMs)
-      this.pending.set(id,{resolve:m=>{cleanup();resolve(m)},reject:e=>{cleanup();reject(e)}})
+      this.pending.set(id,{resolve:m=>{cleanup();if(value.kind==='preferences'){this.displayPreferences={...value.preferences};this.changed()}resolve(m)},reject:e=>{cleanup();reject(e)}})
       signal?.addEventListener('abort',abort,{once:true})
       try{if(!this.child.stdin.write(JSON.stringify({...value,id})+'\n','utf8'))this.blocked=true}catch(error){cleanup();reject(error)}
     })
@@ -279,6 +295,7 @@ export class OverlayController {
     return this.stopping
   }
   async finishStop(reason) {
+    this.adaptive.clearHuman();this.adaptive.session=null;this.displayPreferences=null
     this.stopped=true;this.ready=false;this.latest=undefined
     this.rejectReady?.(new Error(reason))
     if(this.starting)await this.starting
@@ -336,6 +353,7 @@ export class OverlayController {
 
   async close() {
     if(this.closed)return
+    clearInterval(this.adaptiveTimer);this.adaptive.clearHuman();this.adaptive.session=null
     this.closed=true;this.pendingActivity=undefined;this.activity++;this.onActivity?.();this.previewTicket++;this.preview.stop()
     if(this.stopping)await this.stopping
     this.rejectReady?.(new Error('Overlay closed during startup.'))

@@ -34,7 +34,7 @@ internal sealed partial class PetWindow {
         if (keyboard?.Visible == true) keyboardTimer.Start(); else keyboardTimer.Stop();
         if (rendererVisible != modelShow) { rendererVisible = modelShow; Post(new JsonObject { ["kind"] = "visibility", ["visible"] = modelShow }); }
         if (!rendererDisposed && web.CoreWebView2 != null) web.CoreWebView2.IsMuted = true;
-        SyncCursorGaze();PublishStatus();ConfirmVisibleFrame();
+        SyncCursorGaze();SyncControlObserver();PublishStatus();ConfirmVisibleFrame();
     }
     void Place() {
         double width = UseKeyboard ? settings.KeyboardWidthDip : settings.WidthDip;
@@ -83,13 +83,13 @@ internal sealed partial class PetWindow {
         Output(new { kind = "ready", protocolVersion = 3, renderer = modelReady ? "live2d" : "keyboard", affinitySupported,
             bounds = new { x = b.X, y = b.Y, width = b.Width, height = b.Height }, modelLoaded = modelReady, error = errorMessage, errorCode,
             cache = ownsCache ? new { root = cacheRoot, directory = cacheDirectory } : null,
-            capabilities = new { confirmedVisibility = webReady && !rendererDisposed, management = true, model = webReady && !rendererDisposed, picker = true, metrics = webReady && !rendererDisposed, deferredModel = true, archives = true, adaptation = webReady && !rendererDisposed, handStyles = webReady && !rendererDisposed, motions = webReady && !rendererDisposed } });
+            capabilities = new { confirmedVisibility = webReady && !rendererDisposed, management = true, adaptiveControl = true, modelInfoVisibility = true, model = webReady && !rendererDisposed, picker = true, metrics = webReady && !rendererDisposed, deferredModel = true, archives = true, adaptation = webReady && !rendererDisposed, handStyles = webReady && !rendererDisposed, motions = webReady && !rendererDisposed } });
         PublishStatus();
     }
     void PublishStatus() {
         if (dead || (qa && !qaInteractive)) return;
         var value = new { phase = startup.Pending ? "starting" : loading ? "loading" : modelReady || (webReady && errorMessage == null) ? "ready" : "fallback", renderer = UseKeyboard ? "keyboard" : "live2d",
-            modelCapable = webReady && !rendererDisposed, motionCapable = webReady && !rendererDisposed, adaptationCapable = webReady && !rendererDisposed, archiveCapable = true,
+            adaptiveControlCapable = true, modelInfoVisibilityCapable = true, modelCapable = webReady && !rendererDisposed, motionCapable = webReady && !rendererDisposed, adaptationCapable = webReady && !rendererDisposed, archiveCapable = true,
             view = EffectiveView, visible = IsVisible || keyboard?.Visible == true, userHidden, adjusting, modelLoaded = modelReady, loading,
             modelName = package?.Manifest["name"]?.GetValue<string>(), modelPath = package?.ModelPath,
             modelSourcePath = package?.SourcePath, modelEntry = package?.ModelEntry, modelKey = package?.ModelKey, sourceProof = package?.SourceProof, adapterCatalog = modelAdapter,
@@ -112,8 +112,9 @@ internal sealed partial class PetWindow {
         viewOverride = view; Place(); VisibleGate();
     }
     void ApplyPreferences(JsonObject data) {
-        settings = OverlaySettings.FromJson(data["preferences"]?.ToJsonString() ?? throw new InvalidDataException("Missing preferences."));
-        settings.Revision = data["revision"]?.GetValue<long>() ?? 0;
-        PushStyle(); Place(); VisibleGate();
+        var previous=settings;var next=OverlaySettings.FromJson(data["preferences"]?.ToJsonString() ?? throw new InvalidDataException("Missing preferences."));
+        next.Revision=data["revision"]?.GetValue<long>()??0;settings=next;
+        try{PushDisplayPreferences();PushStyle();Place();VisibleGate();if(next.ControlMode=="adaptive"&&!qa&&activated&&!userHidden&&humanObserverFailure!=null)throw new InvalidDataException("Read-only input observation unavailable.");}
+        catch{settings=previous;StopControlObserver();PushDisplayPreferences();PushStyle();Place();VisibleGate();throw;}
     }
 }

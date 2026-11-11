@@ -9,8 +9,13 @@ try {
     if (checked.error) throw checked.error
     if (checked.status !== 0) throw Error('Syntax error in ' + name + '\n' + checked.stderr)
   }
+  await import('./package-regression.mjs')
+  await import('./settings-regression.mjs')
   await import('./feature-regression.mjs')
+  await import('./watermark-removal-regression.mjs')
+  await import('./data-directory-regression.mjs')
   await import('./model-library-regression.mjs')
+  await import('./adaptive-regression.mjs')
   console.log('Static validation passed: ' + result.js.length + ' JS/MJS files; local literal references, JSON and ' + result.secretChecked + ' text files checked.')
   console.log('Regression fixtures were isolated; no desktop process, screenshots, real input, visual acceptance or historical functional test suites were run.')
 } catch (error) {

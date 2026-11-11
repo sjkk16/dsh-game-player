@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { DESKTOP_RUNTIME_DIRECTORY } from '../src/desktop-runtime.js'
 
 export const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)))
-export const sourceRoots = ['package.json', 'index.js', 'client.js', 'cordis.patch.yml', 'icon.svg', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'CHANGELOG.md', 'pnpm-lock.yaml', 'pnpm-workspace.yaml']
+export const sourceRoots = ['package.json', 'index.js', 'client.js', 'cordis.patch.yml', 'icon.svg', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'CHANGELOG.md', 'pnpm-workspace.yaml', 'pnpm-lock.yaml']
 const sourcePatterns = [
   /^src\/(?:[^/]+\.(?:js|mjs|ps1|cs|json)|live2d\/[^/]+\.js)$/,
   /^locale\/[^/]+\.json$/,
@@ -55,6 +55,34 @@ export function assertSafeFile(name) {
     || /(^|\/)Microsoft\.Web\.WebView2\.[^/]+\.xml$/i.test(name)) {
     throw Error('Private, generated, model or unnecessary file: ' + name)
   }
+}
+
+/** Validate an npm pack listing without reading files or checking runtime contents. */
+export function validatePackageListing(listing, { manifest, sourceNames, runtimeNames = [], requireRuntime = false }) {
+  if (!Array.isArray(listing) || listing.length !== 1 || !listing[0] || !Array.isArray(listing[0].files)) {
+    throw Error('Expected one npm pack JSON entry')
+  }
+  const entry = listing[0]
+  if (entry.name !== manifest.name || entry.version !== manifest.version) throw Error('Packed identity/version differs from package.json')
+  const names = entry.files.map(file => {
+    if (!file || typeof file.path !== 'string') throw Error('Invalid package file entry')
+    return file.path
+  })
+  const files = new Set(names), runtimePrefix = DESKTOP_RUNTIME_DIRECTORY + '/'
+  if (files.size !== names.length) throw Error('Duplicate package paths')
+  let hasRuntime = false
+  for (const name of names) {
+    assertSafeFile(name)
+    if (/^runtime(?:\/|$)/i.test(name)) {
+      if (!name.startsWith(runtimePrefix) || name.length === runtimePrefix.length) throw Error('Unexpected runtime path: ' + name)
+      hasRuntime = true
+    }
+  }
+  // npm omits pnpm-lock.yaml from tarballs; it remains required in the source tree.
+  const required = [...sourceNames.filter(name => name !== 'pnpm-lock.yaml'), ...(requireRuntime ? runtimeNames : [])]
+  for (const name of required) if (!files.has(name)) throw Error('Required file absent from package: ' + name)
+  if (requireRuntime && !hasRuntime) throw Error('Runtime absent from release package')
+  return { fileCount: files.size, hasRuntime }
 }
 
 export function assertNoSecrets(root, names) {
