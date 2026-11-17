@@ -63,6 +63,7 @@ internal static class DesktopUtility {
         } else {
             using var dialog = new Forms.OpenFileDialog { CheckFileExists = true, Multiselect = false, RestoreDirectory = true };
             (dialog.Title, dialog.Filter) = mode switch {
+                "model-zip" => ("添加 ZIP 模型", "ZIP 模型压缩包|*.zip"),
                 "model-file" => ("选择 Live2D 模型", "Live2D 模型或压缩包|*.model3.json;*.zip|模型文件|*.model3.json|ZIP 压缩包|*.zip"),
                 "profile" => ("选择参数适配文件", "适配 JSON|*.json"),
                 "keyboard-image" => ("选择键盘图片", "键盘图片|*.png;*.jpg;*.jpeg;*.bmp"),

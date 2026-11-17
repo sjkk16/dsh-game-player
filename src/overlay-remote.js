@@ -23,6 +23,7 @@ export const OVERLAY_CONTRIBUTION = {
   package: PACKAGE, face: 'host', schemas: [], model: { services: [], events: [], objects: [] },
   invocations: [
     descriptor('getState', [], stateCodec),
+    descriptor('getSummary', [], stateCodec),
     descriptor('updatePreferences', [parameter('patch', validatePreferenceRequest), parameter('revision', value => {
       if (!Number.isSafeInteger(value) || value < 0) throw preferenceError('invalid_revision', 'Invalid preference revision.')
       return value
@@ -41,6 +42,7 @@ export class OverlayRemote extends Service {
     if (this.ctx.invocation?.peer?.principal?.kind !== 'owner') throw preferenceError('owner_required', 'Desktop management is restricted to the Host owner.')
   }
   async getState() { this.owner(); return this.manager.getState() }
+  async getSummary() { this.owner(); return this.manager.getSummary() }
   async updatePreferences(patch, revision, signal) {
     this.owner(); return this.result(() => this.manager.updatePreferences(patch, revision, signal))
   }

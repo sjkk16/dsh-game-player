@@ -3,8 +3,8 @@ import { validatePackageListing } from './validation.mjs'
 import { DESKTOP_RUNTIME_DIRECTORY } from '../src/desktop-runtime.js'
 
 const manifest = { name: '@fixture/package', version: '1.0.0' }
-const sourceNames = ['package.json', 'index.js', 'CHANGELOG.md', 'pnpm-workspace.yaml', 'pnpm-lock.yaml']
-const sourcePaths = sourceNames.filter(name => name !== 'pnpm-lock.yaml')
+const sourceNames = ['package.json', 'index.js', 'pnpm-lock.yaml']
+const sourcePaths = ['package.json', 'index.js']
 const runtimeNames = [DESKTOP_RUNTIME_DIRECTORY + '/GamePlayer.Desktop.dll', DESKTOP_RUNTIME_DIRECTORY + '/GamePlayer.Desktop.runtimeconfig.json']
 const listing = paths => [{ ...manifest, files: paths.map(path => ({ path })) }]
 const validate = (value, options = {}) => validatePackageListing(value, { manifest, sourceNames, ...options })
@@ -13,13 +13,13 @@ function check(name, run) {
   try { run(); scenarios++ } catch (error) { throw Error(name + ': ' + error.message, { cause: error }) }
 }
 check('source-only package needs no runtime or packed pnpm lockfile', () => {
-  assert.deepEqual(validate(listing(sourcePaths)), { fileCount: sourcePaths.length, hasRuntime: false })
+  assert.deepEqual(validate(listing(sourcePaths)), { fileCount: 2, hasRuntime: false })
 })
 check('default mode permits only the current runtime without claiming completeness', () => {
-  assert.deepEqual(validate(listing([...sourcePaths, runtimeNames[0]]), { runtimeNames }), { fileCount: sourcePaths.length + 1, hasRuntime: true })
+  assert.deepEqual(validate(listing([...sourcePaths, runtimeNames[0]]), { runtimeNames }), { fileCount: 3, hasRuntime: true })
 })
 check('release listing contains every required runtime file', () => {
-  assert.deepEqual(validate(listing([...sourcePaths, ...runtimeNames]), { requireRuntime: true, runtimeNames }), { fileCount: sourcePaths.length + runtimeNames.length, hasRuntime: true })
+  assert.deepEqual(validate(listing([...sourcePaths, ...runtimeNames]), { requireRuntime: true, runtimeNames }), { fileCount: 4, hasRuntime: true })
 })
 check('release mode rejects absent runtime even without a required-file list', () => {
   assert.throws(() => validate(listing(sourcePaths), { requireRuntime: true }), /Runtime absent/)

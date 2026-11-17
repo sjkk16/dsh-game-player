@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { DESKTOP_RUNTIME_DIRECTORY } from '../src/desktop-runtime.js'
 
 export const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)))
-export const sourceRoots = ['package.json', 'index.js', 'client.js', 'cordis.patch.yml', 'icon.svg', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'CHANGELOG.md', 'pnpm-workspace.yaml', 'pnpm-lock.yaml']
+export const sourceRoots = ['package.json', 'index.js', 'client.js', 'cordis.patch.yml', 'icon.svg', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'pnpm-lock.yaml']
 const sourcePatterns = [
   /^src\/(?:[^/]+\.(?:js|mjs|ps1|cs|json)|live2d\/[^/]+\.js)$/,
   /^locale\/[^/]+\.json$/,
@@ -121,7 +121,8 @@ export function checkSource(root = projectRoot) {
     }
   }
   const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
-  if (DESKTOP_RUNTIME_DIRECTORY !== 'runtime/desktop-' + manifest.version) throw Error('Runtime directory and package version differ')
+  // Version-isolated performance build; never package a different local runtime.
+  if (DESKTOP_RUNTIME_DIRECTORY !== 'runtime/desktop-' + manifest.version + '-performance') throw Error('Runtime directory and package version differ')
   const project = readFileSync(join(root, 'desktop/GamePlayer.Desktop.csproj'), 'utf8')
   if (!project.includes('<Version>' + manifest.version + '</Version>')) throw Error('Desktop project version differs from package version')
   for (const [name, command] of Object.entries(manifest.scripts)) {

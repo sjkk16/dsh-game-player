@@ -11,6 +11,8 @@ public class GameWindowInfo {
     public ClientBounds client;
 }
 public static class GamePlayerWindow {
+    public static Func<GameWindowInfo> RecordingWindow;
+    public static Func<bool> RecordingOccluded;
     delegate bool EnumCallback(IntPtr hwnd, IntPtr data);
     [DllImport("user32.dll")] static extern bool EnumWindows(EnumCallback callback, IntPtr data);
     [DllImport("user32.dll")] static extern bool IsWindow(IntPtr hwnd);
@@ -30,12 +32,12 @@ public static class GamePlayerWindow {
         return new GameWindowInfo {windowId=hwnd.ToInt64()+":"+pid+":"+start,processStart=start.ToString(),pid=(int)pid,title=title.ToString(),valid=true,focused=GamePlayerNative.GetForegroundWindow()==hwnd,minimized=IsIconic(hwnd),client=new ClientBounds{x=origin.X,y=origin.Y,width=rect.right-rect.left,height=rect.bottom-rect.top}};
     }
     public static GameWindowInfo Get(string id) {
-        if(GamePlayerNative.Recording){var mock=InputSession.MockWindow();if(id!=mock.windowId||!mock.valid)throw new InvalidOperationException("Window identity is invalid.");return mock;}
+        if(GamePlayerNative.Recording){var mock=RecordingWindow();if(id!=mock.windowId||!mock.valid)throw new InvalidOperationException("Window identity is invalid.");return mock;}
         long hwnd;var parts=(id??"").Split(':');if(parts.Length!=3||!long.TryParse(parts[0],out hwnd)||hwnd==0)throw new ArgumentException("Invalid windowId.");
         var info=Describe(new IntPtr(hwnd));if(info.windowId!=id)throw new InvalidOperationException("Window HWND/PID/process lifetime changed.");return info;
     }
     public static GameWindowInfo[] List() {
-        if(GamePlayerNative.Recording)return new GameWindowInfo[]{InputSession.MockWindow()};
+        if(GamePlayerNative.Recording)return new GameWindowInfo[]{RecordingWindow()};
         var list=new List<GameWindowInfo>();EnumWindows(delegate(IntPtr hwnd,IntPtr data){try{list.Add(Describe(hwnd));}catch{}return true;},IntPtr.Zero);return list.ToArray();
     }
     public static void Ready(GameWindowInfo info) {
@@ -44,7 +46,7 @@ public static class GamePlayerWindow {
     public static void Point(GameWindowInfo info,int x,int y) {
         Ready(info);var b=info.client;
         if(x<b.x||y<b.y||(long)x>=(long)b.x+b.width||(long)y>=(long)b.y+b.height)throw new ArgumentException("Mouse point outside bound client area.");
-        if(GamePlayerNative.Recording){if(InputSession.MockOccluded())throw new InvalidOperationException("Mouse point is occluded.");return;}
+        if(GamePlayerNative.Recording){if(RecordingOccluded())throw new InvalidOperationException("Mouse point is occluded.");return;}
         var hit=GetAncestor(WindowFromPoint(new GamePlayerNative.POINT{X=x,Y=y}),2);
         if(hit.ToInt64().ToString()!=info.windowId.Split(':')[0])throw new InvalidOperationException("Mouse point is occluded by another window.");
     }

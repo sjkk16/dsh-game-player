@@ -10,6 +10,20 @@ import { homedir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { build } from 'esbuild'
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..')
+const out=resolve(process.env.DSH_DESKTOP_OUTPUT??join(root,DESKTOP_RUNTIME_DIRECTORY))
+if(out!==join(root,DESKTOP_RUNTIME_DIRECTORY)&&!out.startsWith(join(root,'.qa')+'\\'))throw Error('Staged desktop output must stay inside this project QA directory')
+// Refuse a live output before changing generated resources; use an isolated QA output instead.
+if(process.platform==='win32'){
+  const assembly=join(out,'GamePlayer.Desktop.dll')
+  const present=await access(assembly).then(()=>true,()=>false)
+  if(present){
+    const powershell=join(process.env.WINDIR??'C:\\Windows','System32/WindowsPowerShell/v1.0/powershell.exe')
+    const probe=spawnSync(powershell,['-NoProfile','-NonInteractive','-Command',
+      '$ErrorActionPreference="Stop"; $file=[System.IO.File]::Open($env:DSH_RUNTIME_PROBE,[System.IO.FileMode]::Open,[System.IO.FileAccess]::ReadWrite,[System.IO.FileShare]::None); $file.Dispose()'],
+      {encoding:'utf8',windowsHide:true,timeout:10000,env:{...process.env,DSH_RUNTIME_PROBE:assembly}})
+    if(probe.error||probe.status!==0)throw Error('Runtime output is in use or unwritable. Stop the display or set DSH_DESKTOP_OUTPUT to an isolated directory inside .qa before building.')
+  }
+}
 const args=process.argv.slice(2),sdk=resolve(args.includes('--sdk')?args[args.indexOf('--sdk')+1]:join(root,'.qa/sdk/CubismSdkForWeb-5-r.5'))
 const pin={version:'CubismSdkForWeb-5-r.5',archiveSha256:'67064a7fb1812cf502f5c4a03bfe12cc638c75a621bb4acf06bb28763df06ba0',coreSha256:'8741f739779b5d5210872bd3d7d99f0f1e56e6c87409e7d26d6bb4b80aa1ef47'}
 const hash=b=>createHash('sha256').update(b).digest('hex')
@@ -22,20 +36,20 @@ const web=join(root,'desktop/web');await mkdir(join(web,'vendor'),{recursive:tru
 await writeFile(join(web,'vendor/live2dcubismcore.min.js'),core)
 await build({entryPoints:[join(root,'desktop/renderer.js')],outfile:join(web,'renderer.js'),bundle:true,platform:'browser',format:'iife',target:'chrome120',alias:{'@cubism':join(sdk,'Framework/src')},legalComments:'eof',minify:false})
 for(const name of await readdir(join(sdk,'Framework/Shaders/WebGL')))await copyFile(join(sdk,'Framework/Shaders/WebGL',name),join(web,'shaders',name))
-const out=resolve(process.env.DSH_DESKTOP_OUTPUT??join(root,DESKTOP_RUNTIME_DIRECTORY))
-if(out!==join(root,DESKTOP_RUNTIME_DIRECTORY)&&!out.startsWith(join(root,'.qa')+'\\'))throw Error('Staged desktop output must stay inside this project QA directory')
+
 const dotnet=await desktopDotnet()
 const restored=spawnSync(dotnet.executable,['restore',join(root,'desktop/GamePlayer.Desktop.csproj'),'--locked-mode','--configfile',dotnet.config,'--nologo'],{stdio:'inherit',windowsHide:true,env:dotnet.env})
 if(restored.error)throw restored.error;if(restored.status!==0)throw Error('Locked restore failed')
-const run=spawnSync(dotnet.executable,['publish',join(root,'desktop/GamePlayer.Desktop.csproj'),'-c','Release','--no-restore','-p:DebugType=None','-p:DebugSymbols=false','-o',out,'--nologo','-v:q'],{stdio:'inherit',windowsHide:true,env:dotnet.env})
+const run=spawnSync(dotnet.executable,['publish',join(root,'desktop/GamePlayer.Desktop.csproj'),'-c','Release','--no-restore','-o',out,'--nologo','-v:q'],{stdio:'inherit',windowsHide:true,env:dotnet.env})
 if(run.error)throw run.error;if(run.status!==0)throw Error('Desktop publish failed')
-// Only debug sidecars and unnecessary WebView2 API documentation are removed.
-// The output boundary was checked above; no recursive removal or model access.
-for(const name of await readdir(out))if(/\.pdb$/i.test(name)||/^Microsoft\.Web\.WebView2\.[^/]+\.xml$/i.test(name))await unlink(join(out,name))
 for(const name of ['key-map.json','overlay-layout.json'])await copyFile(join(root,'src',name),join(out,name))
 await mkdir(join(out,'licenses'),{recursive:true})
 for(const [input,name] of [['LICENSE.md','Live2D-SDK.md'],['NOTICE.md','Live2D-NOTICE.md'],['Core/LICENSE.md','Live2D-Core.md'],['Core/RedistributableFiles.txt','Core-RedistributableFiles.txt'],['Framework/LICENSE.md','Live2D-Framework.md']])await copyFile(join(sdk,input),join(out,'licenses',name))
 const nuget=join(dotnet.env.NUGET_PACKAGES,'microsoft.web.webview2/1.0.3650.58');for(const name of ['LICENSE.txt','NOTICE.txt'])await copyFile(join(nuget,name),join(out,'licenses','WebView2-'+name))
 await copyFile(join(dotnet.env.NUGET_PACKAGES,'microsoft.windows.sdk.net.ref/10.0.17763.57/microsoft.windows.sdk.net.ref.nuspec'),join(out,'licenses/Windows-SDK-NuGet-notice.xml'))
 await writeFile(join(out,'live2d-build.json'),JSON.stringify({...pin,frameworkBundled:true,webview2:'1.0.3650.58',rendererSha256:hash(await readFile(join(web,'renderer.js')))},null,2))
+// These generated debug/documentation sidecars are deliberately excluded from distribution.
+for(const name of ['GamePlayer.Desktop.pdb','Microsoft.Web.WebView2.Core.xml','Microsoft.Web.WebView2.WinForms.xml','Microsoft.Web.WebView2.Wpf.xml']){
+  await unlink(join(out,name)).catch(error=>{if(error.code!=='ENOENT')throw error})
+}
 console.log('Built local desktop runtime. A Core render test is still required; this is not visual acceptance.')

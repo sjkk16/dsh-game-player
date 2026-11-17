@@ -7,6 +7,7 @@ import vm from 'node:vm'
 import { AdaptiveDisplayState, actorText } from '../src/control-adaptive.js'
 import { footerPresentation } from '../src/live2d/control-labels.js'
 import { InputDisplayState } from '../src/overlay-state.js'
+import { InputDisplayDiagnostics } from '../src/input-display-diagnostics.js'
 import { OverlayController } from '../src/overlay.js'
 import { OverlayManagement } from '../src/overlay-management.js'
 import { OverlayPreferences, PREFERENCE_DEFAULTS, migratePreferences, validatePreferenceRequest } from '../src/overlay-preferences.js'
@@ -90,7 +91,7 @@ await test('actual renderer header sticky footer toggle warnings and preview sep
  const element=id=>{if(!elements.has(id))elements.set(id,{textContent:'',attrs:{},title:'',style:{setProperty(){}},setAttribute(k,v){this.attrs[k]=v},addEventListener(){},getContext(){return {clearRect(){}}}});return elements.get(id)}
  const doc={querySelector:element,body:{style:{setProperty(){}},classList:{toggle:(k,on)=>on?classes.add(k):classes.delete(k)}}}
  class Scheduler{constructor(){this.visible=false}touch(){}setVisible(v){this.visible=v}setAnimating(){}dispose(){}}
- const context=vm.createContext({document:doc,window:{chrome:{webview:{postMessage(){},addEventListener:(kind,cb)=>{listener=cb}}},addEventListener(){}},performance:{now:()=>0},ResizeObserver:class{observe(){}disconnect(){}},FrameScheduler:Scheduler,CursorProgress:class{},actorText,displayText:s=>s.status==='locked'?'输入已锁定':s.status==='unknown'?'连接 / 释放状态未知':'普通底部文字',setTimeout:()=>0,clearTimeout(){},console})
+ const context=vm.createContext({document:doc,window:{chrome:{webview:{postMessage(){},addEventListener:(kind,cb)=>{listener=cb}}},addEventListener(){}},performance:{now:()=>0},ResizeObserver:class{observe(){}disconnect(){}},InputDisplayDiagnostics,FrameScheduler:Scheduler,CursorProgress:class{},actorText,displayText:s=>s.status==='locked'?'输入已锁定':s.status==='unknown'?'连接 / 释放状态未知':'普通底部文字',setTimeout:()=>0,clearTimeout(){},console})
  vm.runInContext((await fs.readFile(join(root,'desktop/renderer.js'),'utf8')).replace(/^import .*$/gm,''),context)
  const send=data=>listener({data});send({kind:'state',...state(),controlMode:'adaptive',lastActor:'human'});assert.equal(element('#identity').textContent,'人控制')
  send({kind:'display-preferences',modelInfoVisible:false});assert.equal(classes.has('hide-model-info'),true);assert.equal(element('footer').attrs['aria-hidden'],'true');assert.equal(element('#identity').textContent,'人控制')
@@ -100,7 +101,7 @@ await test('actual renderer header sticky footer toggle warnings and preview sep
  assert.deepEqual(footerPresentation(false,'ready'),{hidden:true,capabilitiesHidden:true});assert.equal(footerPresentation(false,'unknown').hidden,false)
 })
 await test('native read-only structure and source metadata',async()=>{
- const observer=await fs.readFile(join(root,'desktop/HumanInputObserver.cs'),'utf8'),input=await fs.readFile(join(root,'src/native.cs'),'utf8'),keyboard=await fs.readFile(join(root,'src/overlay-window.cs'),'utf8')
+ const observer=await fs.readFile(join(root,'desktop/HumanInputObserver.cs'),'utf8'),input=(await fs.readFile(join(root,'src/native-platform.cs'),'utf8'))+(await fs.readFile(join(root,'src/native.cs'),'utf8')),keyboard=await fs.readFile(join(root,'src/overlay-window.cs'),'utf8')
  assert.doesNotMatch(observer,/SendInput|ToUnicode|GetClipboard|WriteAllText/);assert.equal((observer.match(/return CallNextHookEx/g)??[]).length,2);assert.match(observer,/queue.Count>=128/);assert.match(observer,/WaitOne\(250\)/);assert.match(observer,/now-lastHeartbeat>=250/);assert.doesNotMatch(observer,/batch.Count==0/)
  assert.match(input,/InputSourceTag = 0x44534847/);assert.equal((input.match(/dwExtraInfo = new IntPtr\(InputSourceTag\)/g)??[]).length,2)
  assert.match(keyboard,/lastActor=="human"\?"人控制":lastActor=="ai"\?"AI控制"/)

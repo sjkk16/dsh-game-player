@@ -3,8 +3,10 @@ import { spawn } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
+import { ensureStorageDirectory } from './storage-directory.js'
 import { InputDisplayState, InputPreview } from './overlay-state.js'
 import { AdaptiveDisplayState } from './control-adaptive.js'
+import { InputDisplayDiagnostics } from './input-display-diagnostics.js'
 import { resolvePowershell } from './pwsh-bridge.js'
 import { OverlayPreferences } from './overlay-preferences.js'
 import { cleanupOverlayCache } from './overlay-cache.js'
@@ -46,15 +48,17 @@ export class OverlayController {
     this.visibilityHolds=0;this.deferModelStartup=0;this.nativeCaches=new WeakMap()
     this.runtime={phase:'not-started',renderer:null,visible:false,userHidden:false,adjusting:false,modelLoaded:false,loading:false,error:null}
     this.onActivity=undefined;this.onPreferences=undefined;this.onRealObservation=undefined;this.onMotionEvent=undefined
+    this.inputDiagnostics=new InputDisplayDiagnostics(options.now);this.displaySequence=0
     this.adaptive=new AdaptiveDisplayState(options.now);this.displayPreferences=null
     this.adaptiveTimer=setInterval(()=>{if(!this.closed&&this.ready&&!this.dead&&this.controlMode()==='adaptive')this.changed()},250);this.adaptiveTimer.unref?.()
   }
   get enabled() { return this.enabledSource()!==false }
   controlMode(){return this.capabilities.adaptiveControl===true?(this.displayPreferences??this.preferences.value).controlMode:'ai-only'}
-  observe(message) { if(!this.enabled||this.closed)return;if(this.realState.accept(message)){this.adaptive.observeAI(message,this.realState);this.onRealObservation?.(message);if(this.state===this.realState||this.controlMode()==='adaptive')this.changed()} }
+  observe(message) { if(!this.enabled||this.closed)return;if(this.realState.accept(message)){this.inputDiagnostics.record('ai',{...this.realState.snapshot(),sequence:message.sequence});this.adaptive.observeAI(message,this.realState);this.onRealObservation?.(message);if(this.state===this.realState||this.controlMode()==='adaptive')this.changed()} }
   observeHuman(message){
     if(!this.enabled||this.closed||this.capabilities.adaptiveControl!==true)return
     if(this.adaptive.observeHuman(message)){
+      if(message.kind==='human-observation')this.inputDiagnostics.record('human',message)
       if(message.source==='human'&&['down','up','move','wheel'].includes(message.event)){
         this.preview.stop();if(this.state===this.previewState)this.state=this.realState;this.onMotionEvent?.({kind:'human-input'})
       }
@@ -83,12 +87,14 @@ export class OverlayController {
       for(const p of value.pulses)this.startupPulses.add(p.id)
       if(value.moveMs>0)this.startupMove=true;if(value.textMs>0)this.startupText=true;if(value.wheelMs>0)this.startupWheel=value.wheelDirection
     }
-    this.latest={kind:'state',...value,activated:this.activated&&this.visibilityHolds===0};this.flush()
+    const displaySequence=++this.displaySequence
+    this.inputDiagnostics.record('merged',{...value,sequence:displaySequence})
+    this.latest={kind:'state',...value,displaySequence,activated:this.activated&&this.visibilityHolds===0};this.flush()
   }
   flush() {
     if(!this.ready||!this.child||this.dead||this.blocked||!this.latest||(!this.activated&&this.protocolVersion<3))return
     const value=this.latest;this.latest=undefined
-    try {this.blocked=!this.child.stdin.write(JSON.stringify(value)+'\n','utf8')}catch(error){this.failed(error)}
+    try {this.blocked=!this.child.stdin.write(JSON.stringify(value)+'\n','utf8');this.inputDiagnostics.record('sent',{...value,sequence:value.displaySequence})}catch(error){this.failed(error)}
   }
   failed(error) {
     this.runtime={...this.runtime,phase:'error',visible:false,error:error.message};this.lastError=error.message;this.stopped=true;this.ready=false;this.preview.stop();this.onMotionEvent?.({kind:'unavailable'})
@@ -113,6 +119,7 @@ export class OverlayController {
       const userHidden=this.runtime.userHidden===true
       try {
         if(!this.powershell)throw new Error('The overlay requires Windows.')
+        await ensureStorageDirectory(dirname(this.settingsPath),{io:this.preferences.io})
         if(!this.useDesktop)this.warn('game player: Live2D runtime not built; using the keyboard display. See LIVE2D.md.')
         const native=this.useDesktop?desktopLaunch(this.desktop,['--parent',String(process.pid),'--settings',this.settingsPath,'--default-model',this.defaultModel,'--managed','true','--defer-model',String(deferModel)]):null
         this.child=this.useDesktop?this.spawn(native.command,native.args,{windowsHide:true,stdio:['pipe','pipe','pipe']}):this.spawn(this.powershell,['-NoProfile','-NonInteractive','-STA','-ExecutionPolicy','Bypass','-File',join(directory,'overlay-host.ps1'),'-ParentPid',String(process.pid),'-SettingsPath',this.settingsPath],{windowsHide:true,stdio:['pipe','pipe','pipe']})
@@ -181,6 +188,7 @@ export class OverlayController {
           if(typeof message.state.modelCapable==='boolean')this.capabilities.model=message.state.modelCapable
           if(typeof message.state.motionCapable==='boolean')this.capabilities.motions=message.state.motionCapable
           if(typeof message.state.adaptationCapable==='boolean')this.capabilities.adaptation=message.state.adaptationCapable
+          if(typeof message.state.watermarkCapable==='boolean')this.capabilities.watermark=message.state.watermarkCapable
           if(typeof message.state.archiveCapable==='boolean')this.capabilities.archives=message.state.archiveCapable
           if(typeof message.state.adaptationCapable==='boolean')this.capabilities.handStyles=message.state.adaptationCapable
           if(message.state.modelLoaded===false&&message.state.error)this.onMotionEvent?.({kind:'unavailable'})
@@ -266,6 +274,14 @@ export class OverlayController {
   async syncPreferences() {
     if(!this.ready||this.dead||this.protocolVersion<3||!this.capabilities.management)return
     const snapshot=this.preferences.snapshot();await this.command({kind:'preferences',...snapshot});this.preferencesSentRevision=snapshot.revision
+  }
+  async getInputDiagnostics(){
+    const controller=this.inputDiagnostics.snapshot()
+    if(!this.ready||this.dead||this.capabilities.inputDiagnostics!==true)return {controller,native:null}
+    try{
+      const reply=await this.command({kind:'input-diagnostics'},{timeoutMs:1000})
+      return {controller,native:reply.inputDiagnostics??null}
+    }catch{return {controller,native:null,unavailable:true}}
   }
   command(value,{signal,timeoutMs=this.timeoutMs}={}) {
     if(signal?.aborted)return Promise.reject(signal.reason??new Error('Canceled.'))

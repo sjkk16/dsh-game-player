@@ -1,4 +1,5 @@
 import * as fs from 'node:fs/promises'
+import { ensureStorageDirectory } from './storage-directory.js'
 import {existsSync} from 'node:fs'
 import { dirname, join, resolve, normalize, isAbsolute, sep } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
@@ -54,7 +55,7 @@ export class ModelLibrary {
     return {modelLibrary:{revision:this.index.revision,items},activeModelId:active,libraryError:this.failure,libraryCatalog:this.catalog?{generation:this.catalog.generation,items:this.catalog.items.map(({id,name,entry,error})=>({id,name,entry,enabled:!error,error}))}:null}
   }
   requireAlive(){if(this.manager.lifetime.signal.aborted||this.manager.overlay.closed)throw error('unavailable','Plugin has been unloaded.');if(this.failure)throw error('invalid_library',this.failure)}
-  async ensureRoot(){await this.io.mkdir(dirname(this.path),{recursive:true});this.root=join(await this.io.realpath(dirname(this.path)),'models');await this.io.mkdir(this.root,{recursive:true});if(!same(await this.io.realpath(this.root),this.root)||(await this.io.lstat(this.root)).isSymbolicLink())throw error('unsafe_library_path','The model library directory must not be a link.')}
+  async ensureRoot(){await ensureStorageDirectory(dirname(this.path),{io:this.io});this.root=join(await this.io.realpath(dirname(this.path)),'models');await this.io.mkdir(this.root,{recursive:true});if(!same(await this.io.realpath(this.root),this.root)||(await this.io.lstat(this.root)).isSymbolicLink())throw error('unsafe_library_path','The model library directory must not be a link.')}
   async checkedTree(path) {
     const absolute=resolve(path),boundary=resolve(this.root)+sep,name=absolute.substring(boundary.length)
     if(!absolute.startsWith(boundary)||!(/^([a-f0-9]{64}|\.staging-[a-f0-9]{32})$/.test(name)))throw error('unsafe_library_path','Refusing removal outside the managed package boundary.')
@@ -97,7 +98,12 @@ export class ModelLibrary {
     if(m.busy||m.load)throw error('busy','Another desktop operation is active.')
     if(!m.utilitySupportsLibrary)throw error('unsupported','Install the 0.3.0 desktop runtime to add managed models.')
     const controller=new AbortController(),combined=AbortSignal.any([m.signal(signal),controller.signal]);m.busy='picking';m.load=controller
-    try {const selected=await m.utility(['--pick',action==='addLibraryFolder'?'model-folder':'model-file'],combined);if(!selected.path)return;m.busy='discovering';const catalog=await m.models.discover(selected.path,combined);aborted(combined);this.catalog={generation:catalog.generation,items:catalog.items};m.models.cancelSelection()}
+    try {const selected=await m.utility(['--pick',action==='addLibraryZip'?'model-zip':action==='addLibraryFolder'?'model-folder':'model-file'],combined);if(!selected.path)return;
+      if(action==='addLibraryZip'){
+        if(typeof selected.path!=='string'||!isAbsolute(selected.path)||/^\\\\|^\/\//.test(selected.path)||!selected.path.toLowerCase().endsWith('.zip'))throw error('invalid_model_zip','请选择本地 ZIP 模型压缩包 / Choose a local ZIP model archive.');
+        const stat=await this.io.stat(selected.path);if(!stat.isFile())throw error('invalid_model_zip','所选 ZIP 路径不是文件 / The selected ZIP path is not a file.');
+      }
+      m.busy='discovering';const catalog=await m.models.discover(selected.path,combined);aborted(combined);this.catalog={generation:catalog.generation,items:catalog.items};m.models.cancelSelection()}
     finally{if(m.load===controller)m.load=null;if(['picking','discovering'].includes(m.busy))m.busy=null}
   }
   cancel(){this.catalog=null}

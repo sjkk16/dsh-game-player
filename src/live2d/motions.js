@@ -28,7 +28,7 @@ export function validateMotion(json, parameters, parts = {}) {
   return { durationMs:Math.min(10000,Math.max(1,Math.round(j.Meta.Duration*1000))), originalDurationMs:Math.round(j.Meta.Duration*1000), ids:j.Curves.filter(c=>c.Target==='Parameter').map(c=>c.Id),...(partIds.length?{partIds}: {}) }
 }
 export function validateMotionAction(value) {
-  const strings=['show','hide','beginAdjust','endAdjust','resetLayout','reloadModel','retryDisplay','preview','stopPreview','cancelLoad','importModelFile','importModelFolder','importProfile','clearProfile','importKeyboardImage','clearKeyboardImage','refreshMotions','stopMotion','refreshAdapter','addLibraryFile','addLibraryFolder']
+  const strings=['show','hide','beginAdjust','endAdjust','resetLayout','reloadModel','retryDisplay','preview','stopPreview','cancelLoad','importModelFile','importModelFolder','importProfile','clearProfile','importKeyboardImage','clearKeyboardImage','refreshMotions','stopMotion','refreshAdapter','addLibraryFile','addLibraryFolder','addLibraryZip']
   if(typeof value==='string'&&strings.includes(value))return value
   if(value&&typeof value==='object'&&!Array.isArray(value)&&['addLibraryModels','selectLibraryModel','removeLibraryModel','setDisplayView'].includes(value.type)){
     const fail=()=>{throw Object.assign(Error('Invalid model library action.'),{code:'invalid_action'})}

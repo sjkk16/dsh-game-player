@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { normalizeAction, validateBudget, validateBalanced } from './keys.js'
 import { isInputObservation } from './overlay-state.js'
+import { PerformanceTimings } from './performance-timings.js'
 // Survives plugin/module reload within the same host. A replacement bridge must
 // not race an old watchdog that is still retrying releases. A normal watchdog
 // exit confirms its final cleanup; a killed watchdog leaves a host-level latch.
@@ -37,6 +38,8 @@ export class PwshBridge {
     this.spawn = options.spawn ?? spawn // Test-only dependency injection; no model-facing setting.
     this.recording = options.recording === true
     this.recordingLog = options.recordingLog
+    this.reader = undefined; this.readerStarting = undefined; this.readQueue = Promise.resolve()
+    this.timings = options.timings ?? new PerformanceTimings()
     this.worker = undefined
     this.guard = undefined
     this.unsafeGuard = undefined
@@ -53,7 +56,7 @@ export class PwshBridge {
     this.closing = undefined
   }
   get child() { return this.worker?.child }
-  get running() { return this.worker !== undefined && !this.worker.dead }
+  get running() { return Boolean((this.worker && !this.worker.dead) || (this.reader && !this.reader.dead)) }
   get guardChild() { return this.guard?.child ?? this.unsafeGuard?.child }
   /** The request timeout this bridge would apply to the next helper call. */
   get requestTimeoutMs() { return this.#timeout() }
@@ -63,11 +66,11 @@ export class PwshBridge {
   }
   async #launch(role, session) {
     if (!this.powershell) throw failure('The game helper needs Windows.', 'UNSUPPORTED_PLATFORM')
-    const args = ['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',this.script,'-Session',session,'-ParentPid',String(process.pid)]
+    const args = ['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',role === 'reader' ? join(dirname(this.script),'readonly-helper.ps1') : this.script,'-Session',session,'-ParentPid',String(process.pid)]
     if (role === 'guard') args.push('-Watchdog')
-    if (this.onObservation) args.push('-ObserveInput')
+    if (this.onObservation && role !== 'reader') args.push('-ObserveInput')
     if (this.recording) args.push('-Recording')
-    if (this.recordingLog) args.push('-RecordingLog',this.recordingLog)
+    if (this.recordingLog && role !== 'reader') args.push('-RecordingLog',this.recordingLog)
     let child
     try { child = this.spawn(
       role === 'guard' ? process.execPath : this.powershell,
@@ -76,10 +79,10 @@ export class PwshBridge {
         ...(process.versions.electron ? { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } } : {}) },
     ) }
     catch (error) { throw failure(`The game helper could not start: ${error.message}`, 'HELPER_START_FAILED') }
-    const transport = { child, role, session, generation: this.generation, pending: new Map(), buffer: '', stderr: '', dead: false, intentional: false, exit: undefined }
+    const transport = { child, role, session, generation: this.generation, pending: new Map(), buffer: '', stderr: '', dead: false, intentional: false, exited: false, exit: undefined }
     transport.exit = new Promise((resolve) => {
-      child.once('close', () => resolve())
-      child.once('error', () => resolve())
+      child.once('close', () => { transport.exited=true; resolve() })
+      child.once('error', () => { transport.exited=true; resolve() })
     })
     child.stdout.setEncoding('utf8'); child.stderr.setEncoding('utf8')
     child.stdout.on('data', (chunk) => this.#read(transport, chunk))
@@ -97,7 +100,7 @@ export class PwshBridge {
   async start() {
     if (this.closed) throw failure('The game helper bridge is closed.', 'HELPER_CLOSED')
     if (this.recovering) await this.recovering
-    if (this.running) return
+    if (this.worker && !this.worker.dead) return
     if (this.starting) return this.starting
     this.starting = (async () => {
       this.generation += 1
@@ -126,7 +129,49 @@ export class PwshBridge {
       if (value.protocolVersion !== 4 || value.state === 2 || value.recording !== this.recording) throw failure('Watchdog handshake failed.', 'WATCHDOG_UNAVAILABLE')
     } catch (error) { if (this.guard === guard) this.guard = undefined; await this.#stop(guard); throw error }
   }
+  async startReader(signal) {
+    if(this.closed)throw failure('The game helper bridge is closed.','HELPER_CLOSED')
+    if(this.reader && !this.reader.dead)return
+    if(this.readerStarting)return this.readerStarting
+    this.readerStarting=(async()=>{
+      const started=performance.now(),session='readonly-'+randomUUID()
+      const reader=await this.#launch('reader',session)
+      if(this.closed){await this.#stop(reader);throw failure('Bridge closed during read-only startup.','HELPER_CLOSED')}
+      this.reader=reader
+      try {
+        const probe=await this.#send(reader,{op:'probe'},signal,this.#timeout())
+        if(probe.protocolVersion!==1 || probe.readOnly!==true || probe.recording!==this.recording)throw failure('Read-only handshake failed.','HELPER_HANDSHAKE_FAILED')
+        this.timings.record('readonlyStartupMs',performance.now()-started)
+      } catch(error){if(this.reader===reader)this.reader=undefined;await this.#stop(reader);throw error}
+    })()
+    try{await this.readerStarting}finally{this.readerStarting=undefined}
+  }
+  requestReadOnly(request,signal) {
+    if(!['frame','window','windows','forget'].includes(request.op))return Promise.reject(failure('Read-only operation rejected.','READONLY_OPERATION'))
+    const queued=performance.now()
+    const run=async()=>{
+      if(this.closed)throw failure('The game helper bridge is closed.','HELPER_CLOSED')
+      if(signal?.aborted)throw failure('Request canceled before execution.','ABORTED')
+      this.timings.record('readonlyQueueMs',performance.now()-queued)
+      await this.startReader(signal); const reader=this.reader,started=performance.now()
+      try {
+        const result=await this.#send(reader,request,signal,this.#timeout())
+        this.timings.record('readonlyRoundTripMs',performance.now()-started)
+        if(request.op==='frame')for(const [stage,ms] of Object.entries(result.timings??{}))this.timings.record(stage,ms)
+        return result
+      } catch(error){if(this.reader===reader)this.reader=undefined;await this.#stop(reader);throw error}
+    }
+    const result=this.readQueue.then(run,run);this.readQueue=result.catch(()=>{})
+    if(!signal)return result
+    return new Promise((resolve,reject)=>{
+      const abort=()=>reject(failure('Read-only request canceled.','ABORTED'))
+      signal.addEventListener('abort',abort,{once:true})
+      if(signal.aborted)abort()
+      result.then(resolve,reject).finally(()=>signal.removeEventListener('abort',abort))
+    })
+  }
   request(request, signal) {
+    if(['frame','window','windows','forget'].includes(request.op))return this.requestReadOnly(request,signal)
     const epoch = this.epoch
     const run = async () => {
       if (signal?.aborted) throw failure('Request canceled before execution.', 'ABORTED')
@@ -218,6 +263,7 @@ export class PwshBridge {
     if (transport.dead) return
     transport.dead = true
     for (const entry of [...transport.pending.values()]) entry.reject(error)
+    if(transport.role==='reader'){if(this.reader===transport)this.reader=undefined;void this.#stop(transport);return}
     // Old-generation events may settle only their own pending map.
     const current = this.worker === transport || this.guard === transport
     if (current && !transport.intentional && !this.closed) {
@@ -233,7 +279,7 @@ export class PwshBridge {
     transport.intentional = true
     try { transport.child.stdin.end() } catch {}
     await Promise.race([transport.exit, pause(1000)])
-    if (!transport.dead && force) { try { transport.child.kill() } catch {}; await Promise.race([transport.exit, pause(1000)]) }
+    if (!transport.exited && force) { try { transport.child.kill() } catch {}; await Promise.race([transport.exit, pause(1000)]) }
     for (const entry of [...transport.pending.values()]) entry.reject(failure('Helper stopped.', 'HELPER_STOPPED'))
   }
   async #recover(worker = this.worker) {
@@ -294,6 +340,8 @@ export class PwshBridge {
     if (this.closing) return this.closing
     this.closed = true
     this.closing = (async () => {
+      const reader=this.reader;this.reader=undefined;await this.#stop(reader)
+      if(this.readerStarting){try{await this.readerStarting}catch{}}
       if (this.starting) { try { await this.starting } catch {} }
       await this.#recover(this.worker)
       if (this.unsafeGuard && !this.unsafeGuard.dead) this.logger?.warn('game player: manual input recovery is required; watchdog still retrying.')

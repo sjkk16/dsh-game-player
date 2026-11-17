@@ -71,7 +71,7 @@ function describeAction(action) {
  * }} deps
  * @returns {Record<string, any>} a ToolDefinition.
  */
-export function screenTool({ options, capture, attach, imageDemand, windows }) {
+export function screenTool({ options, capture, attach, imageDemand, windows, timings }) {
   return {
     name: 'game_screen',
     description:
@@ -174,6 +174,7 @@ export function screenTool({ options, capture, attach, imageDemand, windows }) {
     },
     isConcurrencySafe: () => true,
     async execute(args, exec) {
+      const started=performance.now()
       const maxWidth = args.maxWidth ?? options.maxWidth
       if (!Number.isInteger(maxWidth) || maxWidth < 320 || maxWidth > 2560) {
         throw new Error('maxWidth must be an integer between 320 and 2560.')
@@ -188,7 +189,7 @@ export function screenTool({ options, capture, attach, imageDemand, windows }) {
       try {
       const signal=target.target==='window'?AbortSignal.any([exec.signal,windows.lease(exec.agent)].filter(Boolean)):exec.signal
       const windowId = target.target === 'window' ? assertClient(await windows.current(exec.agent, signal)).windowId : undefined
-      const frame = await capture({ maxWidth, quality, ...target, windowId, consumerId: `screen:${agentId}` }, signal)
+      const frame = await capture({ maxWidth, quality, ...target, windowId, consumerId: `screen:${agentId}`, skipUnchanged:true, forceImage:args.force===true||Boolean(demand) }, signal)
       for (const field of ['width','height','screenWidth','screenHeight','screenX','screenY']) {
         if (!Number.isSafeInteger(frame[field]) || (!field.endsWith('X') && !field.endsWith('Y') && frame[field] <= 0)) throw new Error(`Invalid capture geometry: ${field}.`)
       }
@@ -222,13 +223,15 @@ export function screenTool({ options, capture, attach, imageDemand, windows }) {
           + 'switch it to borderless windowed mode so the desktop can be captured.'
       }
       if (returnImage) {
+        const attachedAt=performance.now()
         value.image = await attach(frame)
+        timings?.record('attachmentMs',performance.now()-attachedAt)
         if (signal?.aborted) throw Object.assign(new Error('Screen capture canceled before delivery.'), { code: 'ABORTED' })
         value.attached = true
         if (demand) imageDemand?.consume(agentId, demand)
       }
       return value
-      } catch(error) { imageDemand?.ensure(agentId); throw error }
+      } catch(error) { imageDemand?.ensure(agentId); throw error } finally { timings?.record('screenTotalMs',performance.now()-started) }
     },
   }
 }

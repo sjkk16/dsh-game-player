@@ -21,6 +21,6 @@ internal static class AdaptiveControlQa {
         var updated=OverlaySettings.FromJson("{\"controlMode\":\"adaptive\",\"modelInfoVisible\":false}");Check(updated.ControlMode=="adaptive"&&!updated.ModelInfoVisible);
         bool rejected=false;try{OverlaySettings.FromJson("{\"controlMode\":\"invalid\"}");}catch{rejected=true;}Check(rejected);
         rejected=false;try{OverlaySettings.FromJson("{\"modelInfoVisible\":\"false\"}");}catch{rejected=true;}Check(rejected);
-        Console.WriteLine(JsonSerializer.Serialize(new{ok=true,checks,hooksInstalled=false,inputInjected=false}));return 0;
+        Console.WriteLine(JsonSerializer.Serialize(new{ok=true,checks,rawKeyboardChecks=RawKeyboardQa.Run(),version=typeof(AdaptiveControlQa).Assembly.GetName().Version?.ToString(),hooksInstalled=false,inputInjected=false}));return 0;
     }
 }

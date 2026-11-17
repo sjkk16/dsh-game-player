@@ -23,10 +23,11 @@ namespace GamePlayer.Desktop;
 internal sealed partial class PetWindow : Window {
     readonly string settingsPath, defaultModel, assetsDir;
     readonly ParentWatch parent;
-    readonly bool qa, managed, deferModel, qaInteractive;
+    readonly bool qa, managed, deferModel, qaInteractive, rendererSmoke;
     readonly string? qaDir;
     OverlaySettings settings;
-    readonly WebView2CompositionControl web = new();
+    readonly GuardedCompositionControl web = new();
+    readonly RendererSurfaceLifetime rendererSurface;
     readonly Grid root = new();
     readonly object inboxLock = new(), outputLock = new();
     readonly Queue<JsonObject> commands = new();
@@ -54,14 +55,16 @@ internal sealed partial class PetWindow : Window {
     Native.Rect dragWindow;
     int qaFrame;
 
-    public PetWindow(string settingsFile, string model, string assets, int parentPid, string? output, bool managed = false, bool deferModel = false, bool qaInteractive = false) {
-        settingsPath = settingsFile; defaultModel = model; assetsDir = assets; qaDir = output; qa = output != null; this.managed = managed; this.deferModel = deferModel; this.qaInteractive = qaInteractive;
+    public PetWindow(string settingsFile, string model, string assets, int parentPid, string? output, bool managed = false, bool deferModel = false, bool qaInteractive = false, bool rendererSmoke = false) {
+        settingsPath = settingsFile; defaultModel = model; assetsDir = assets; qaDir = output; qa = output != null; this.managed = managed; this.deferModel = deferModel; this.qaInteractive = qaInteractive; this.rendererSmoke = rendererSmoke;
         parent = new ParentWatch(parentPid);
         try { settings = qa ? new() : OverlaySettings.Load(settingsPath); }
         catch (Exception e) { settings = new(); Warn("Settings ignored: " + e.Message); }
         WindowStyle = WindowStyle.None; AllowsTransparency = true; Background = Brushes.Transparent; ResizeMode = ResizeMode.NoResize;
         ShowInTaskbar = false; ShowActivated = false; Topmost = true; Title = "AI Live2D 桌宠";
         Width = settings.WidthDip; Height = settings.WidthDip + 76;
+        rendererSurface = new RendererSurfaceLifetime(web, root);
+        web.TextureCreationFailed += RendererTextureFailed;
         root.Children.Add(web); Content = root; web.DefaultBackgroundColor = System.Drawing.Color.Transparent;
         SourceInitialized += (_, _) => {
             hwnd = new WindowInteropHelper(this).Handle;
@@ -109,7 +112,7 @@ internal sealed partial class PetWindow : Window {
     public async Task Start() {
         long ticket = startup.Begin(DateTime.UtcNow);
         new WindowInteropHelper(this).EnsureHandle(); lifeTimer.Start(); PublishStatus();
-        if (!qa || qaInteractive) new Thread(Read) { IsBackground = true }.Start();
+        if ((!qa || qaInteractive) && !rendererSmoke) new Thread(Read) { IsBackground = true }.Start();
         try {
             try {
                 var cache = DesktopStorage.PrepareCache(qa ? qaDir! : Path.GetDirectoryName(settingsPath)!, qa);
@@ -125,6 +128,7 @@ internal sealed partial class PetWindow : Window {
             }
             foreach (var file in Directory.GetFiles(Path.Combine(webDir, "shaders"))) appAssets["/app/shaders/" + Path.GetFileName(file)] = new(File.ReadAllBytes(file), "text/plain");
             appAssets["/app/key-map.json"] = new(File.ReadAllBytes(Path.Combine(assetsDir, "key-map.json")), "application/json");
+            if (rendererSmoke) RendererLifecycleQa.InstallSmokePage(appAssets);
             startup.Advance(ticket, "runtime"); PublishStatus();
             var created = await CoreWebView2Environment.CreateAsync(null, cacheDirectory!, new CoreWebView2EnvironmentOptions());
             if (!startup.CanContinue(ticket) || dead || rendererDisposed) { DisposeLateEnvironment(created); return; }
@@ -141,14 +145,7 @@ internal sealed partial class PetWindow : Window {
             core.Settings.AreBrowserAcceleratorKeysEnabled = false; core.Settings.IsStatusBarEnabled = false; core.Settings.IsZoomControlEnabled = false;
             core.Settings.IsGeneralAutofillEnabled = false; core.Settings.IsPasswordAutosaveEnabled = false;
             core.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
-            core.WebResourceRequested += (_, e) => Resource(environment, e);
-            core.NavigationStarting += (_, e) => { if (e.Uri != "https://overlay.invalid/app/index.html") e.Cancel = true; };
-            core.NewWindowRequested += (_, e) => e.Handled = true;
-            core.DownloadStarting += (_, e) => e.Cancel = true;
-            core.PermissionRequested += (_, e) => e.State = CoreWebView2PermissionState.Deny;
-            core.ProcessFailed += (_, e) => RuntimeFailed("WebView2 process failed: " + e.ProcessFailedKind, "runtime_process_failed", "runtime");
-            core.WebMessageReceived += (_, e) => Message(e.WebMessageAsJson);
-            core.NavigationCompleted += (_, e) => { if (!e.IsSuccess) RuntimeFailed("Local renderer page failed: " + e.WebErrorStatus, "page_load_failed", "page"); };
+            SubscribeRenderer(core);
             startup.Advance(ticket, "page"); PublishStatus();
             core.Navigate("https://overlay.invalid/app/index.html");
         } catch (Exception e) { if (qa) Console.Error.WriteLine(e); if (startup.CanContinue(ticket) && !rendererDisposed && !dead) RuntimeFailed("Renderer initialization failed during " + startup.Stage + ": " + e.Message); }
@@ -185,7 +182,7 @@ internal sealed partial class PetWindow : Window {
             if(!path.StartsWith(boundary,StringComparison.OrdinalIgnoreCase)||!(Guid.TryParseExact(name,"N",out _)||qa&&name=="webview-cache-"+Environment.ProcessId)){Warn("Private renderer cache retained: unexpected cache boundary: "+path);return;}
             // Refuse junctions/symlinks anywhere in the resolved, self-created cache path.
             for(string? part=path;part!=null;part=Path.GetDirectoryName(part))if((File.GetAttributes(part)&FileAttributes.ReparsePoint)!=0){Warn("Private renderer cache retained: linked ancestor: "+part);return;}
-            Directory.Delete(path,true);
+            Directory.Delete(path,true); ownsCache = false;
         }catch(Exception e){Warn((managed ? "Private cache cleanup deferred until display exit: " : "Private renderer cache retained: ")+e.Message+"; "+cacheDirectory);/* Never broaden the cleanup target. */}
     }
     void Cleanup() {
@@ -202,6 +199,9 @@ internal static class Program {
             var a = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             for (int i = 0; i + 1 < args.Length; i += 2) a[args[i]] = args[i + 1];
             Console.InputEncoding = new UTF8Encoding(false); Console.OutputEncoding = new UTF8Encoding(false);
+            if (a.ContainsKey("--qa-renderer-selftest")) return RendererLifecycleQa.Run();
+            if (a.ContainsKey("--qa-renderer-smoke")) return RendererLifecycleQa.RunSmoke(a["--qa-renderer-smoke"]);
+            if (a.ContainsKey("--qa-keyboard-receiver")) return RawKeyboardReceiverQa.Run();
             if (a.ContainsKey("--qa-control-selftest")) return AdaptiveControlQa.Run();
             Native.InitializeDpi();
             if (a.ContainsKey("--pick") || a.ContainsKey("--validate-skin") || a.ContainsKey("--discover-model") || a.ContainsKey("--describe-model-source")) return DesktopUtility.Run(a);

@@ -1,4 +1,5 @@
-import { mkdir, open, readFile, rename, unlink, lstat } from 'node:fs/promises'
+import { open, readFile, rename, unlink, lstat } from 'node:fs/promises'
+import { ensureStorageDirectory } from './storage-directory.js'
 import { dirname, join, isAbsolute } from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { normalizeAction, validateBalanced } from './keys.js'
@@ -37,7 +38,7 @@ export class MacroStore {
   }
   #transaction(fn,write=false){
     const run=async()=>{
-      await mkdir(dirname(this.path),{recursive:true})
+      await ensureStorageDirectory(dirname(this.path))
       const lockPath=this.path+'.lock';let lock
       try{lock=await open(lockPath,'wx',0o600)}catch(e){if(e.code==='EEXIST')throw new Error('Template store busy; lock is never automatically broken.');throw e}
       let temp

@@ -71,10 +71,10 @@ export function demoState() {
   return {
     revision: 1, enabled: true, phase: 'ready', loading: false, visible: true, renderer: 'live2d', view: 'model', modelLoaded: true,
     modelName: '桌边的小猫', modelPath: 'C:/models/cat/model.model3.json', activeModelId: 'builtin-default',
-    capabilities: { management: true, picker: true, model: true, library: true, adaptation: true, motions: true, preview: true, adaptiveControl: true, modelInfoVisibility: true },
+    capabilities: { management: true, picker: true, model: true, library: true, zipImport: true, adaptation: true, motions: true, preview: true, adaptiveControl: true, modelInfoVisibility: true, watermark: true },
     preferences: { widthDip: 420, keyboardWidthDip: 900, opacity: 1, controlMode: 'ai-only', modelInfoVisible: true, globalAdapter: {} },
     modelLibrary: { revision: 1, items: [{ id: 'builtin-default', name: '桌边的小猫', builtin: true, available: true }, { id: 'sample-pet', name: '夜间陪伴 · 示例模型', available: true }] },
-    adapterCatalog: { generation: '00000000-0000-4000-8000-000000000001', modelKey: 'fixture-model', parameters: [], inputs: [], effects: [], handStyle: 'default' },
+    adapterCatalog: { generation: '00000000-0000-4000-8000-000000000001', modelKey: 'fixture-model', parameters: [], inputs: [], effects: [], watermark: { supported: false }, handStyle: 'default' },
     motionCatalog: { generation: '00000000-0000-4000-8000-000000000002', items: [] },
   }
 }

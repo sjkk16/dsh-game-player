@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-game-player",
-  "version": "0.3.10",
+  "version": "0.3.13",
   "private": true,
   "type": "module",
   "description": "Give the model a virtual mouse and keyboard plus a live view of the screen, so it can play a windowed game.",
@@ -24,8 +24,6 @@
     "locale/*.json",
     "icon.svg",
     "README.md",
-    "CHANGELOG.md",
-    "pnpm-workspace.yaml",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "desktop/*.cs",
@@ -38,13 +36,13 @@
     "desktop/web/*.css",
     "scripts/*.mjs",
     "scripts/sdk-files.json",
-    "runtime/desktop-0.3.10/*.exe",
-    "runtime/desktop-0.3.10/*.dll",
-    "runtime/desktop-0.3.10/*.json",
-    "runtime/desktop-0.3.10/web/**/*",
-    "runtime/desktop-0.3.10/profiles/*.json",
-    "runtime/desktop-0.3.10/licenses/*",
-    "runtime/desktop-0.3.10/runtimes/**/native/*.dll"
+    "runtime/desktop-0.3.13-performance/*.exe",
+    "runtime/desktop-0.3.13-performance/*.dll",
+    "runtime/desktop-0.3.13-performance/*.json",
+    "runtime/desktop-0.3.13-performance/web/**/*",
+    "runtime/desktop-0.3.13-performance/profiles/*.json",
+    "runtime/desktop-0.3.13-performance/licenses/*",
+    "runtime/desktop-0.3.13-performance/runtimes/**/native/*.dll"
   ],
   "dsh": {
     "bundle": {
@@ -66,11 +64,13 @@
     "test:release": "node scripts/check-package.mjs --runtime",
     "build:live2d": "node scripts/build-live2d.mjs",
     "test:regression": "node scripts/feature-regression.mjs",
+    "test:watermark": "node scripts/watermark-regression.mjs",
     "test:adaptive": "node scripts/adaptive-regression.mjs",
-    "test:watermark-removal": "node scripts/watermark-removal-regression.mjs",
-    "test:data-directory": "node scripts/data-directory-regression.mjs",
-    "test:library": "node scripts/model-library-regression.mjs",
-    "test:native-isolation": "node scripts/native-isolation-smoke.mjs"
+    "test:fullscreen": "node scripts/fullscreen-keyboard-regression.mjs",
+    "test:native-keyboard": "node scripts/native-keyboard-regression.mjs",
+    "test:renderer": "node scripts/renderer-regression.mjs",
+    "test:renderer-native": "node scripts/renderer-native-regression.mjs",
+    "test:performance": "node scripts/performance-regression.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.12"

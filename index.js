@@ -2,9 +2,9 @@
  * Game Player — gives the model a virtual mouse and keyboard plus a live view
  * of the screen, so it can watch and play a windowed game.
  *
- * The Host half owns three things: the resident PowerShell helper that
- * captures the screen and injects input, the five model-facing tools, and one
- * screen watcher per agent, plus an independent release-only watchdog.
+ * The Host half owns separate lazy read-only capture/query and input helpers,
+ * five model-facing tools, a disabled watcher compatibility interface, and an
+ * independent release-only watchdog. Capture faults never unlock input.
  * Everything is registered as a Cordis effect, so unloading the plugin lifts
  * every timer; input cleanup is confirmed or explicitly reported unsafe.
  *
@@ -14,6 +14,7 @@
  *
  * @module @local/dsh-game-player
  */
+import { PerformanceTimings } from './src/performance-timings.js'
 import { PwshBridge } from './src/pwsh-bridge.js'
 import { normalizeAction } from './src/keys.js'
 import { inputTool, screenTool, watchTool } from './src/tools.js'
@@ -23,18 +24,22 @@ import { MacroStore } from './src/macros.js'
 import { windowTool, macroTool } from './src/extra-tools.js'
 import { assertClient, clientActions } from './src/geometry.js'
 import { join, isAbsolute } from 'node:path'
-import { DEFAULT_MACRO_STORAGE, resolveDataDirectory, prepareDataDirectory, resolveMacroStorage } from './src/data-directory.js'
+import { homedir } from 'node:os'
 import { OverlayController } from './src/overlay.js'
 import { styleFor, THEMES, ACCENTS, LAYOUTS, SKINS, VIEWS, STYLE_DEFAULTS } from './src/keyboard-style.js'
 import Schema from '@deepseek-ai/schemastery'
 import { OverlayManagement } from './src/overlay-management.js'
 import { installOverlayRemote } from './src/overlay-remote.js'
+import { PERSONA_LIMITS, emptyPersona, validatePersona, readPersona, compilePersona } from './src/persona.js'
 
 /** Loader row name, reused as the plugin identity in diagnostics. */
 export const name = 'game-player'
 
 /** Hard dependencies: without a tool registry or an attachment store the tools cannot work. */
 export const inject = ['tools', 'attachments']
+
+/** Where saved action templates live unless the configuration overrides it. */
+const DEFAULT_MACRO_STORAGE = join(process.env.LOCALAPPDATA ?? join(homedir(),'AppData','Local'),'dsh-game-player','macros.json')
 
 /** Defaults for every user-supplied configuration value. */
 const CONFIG_DEFAULTS = {
@@ -50,8 +55,8 @@ const CONFIG_DEFAULTS = {
   monitor: 'primary',
   maxHoldMs: 3000,
   helperTimeoutMs: 15000,
+  persona: emptyPersona(),
   powershellPath: undefined,
-  dataDirectory: undefined,
   macroStoragePath: DEFAULT_MACRO_STORAGE,
 }
 
@@ -62,7 +67,7 @@ const CONFIG_DEFAULTS = {
  *
  * Two classes of field:
  *
- * - The twelve settings fields below are volatile. `@deepseek-ai/dsh-settings`
+ * - The settings fields below, including the composite persona value, are volatile. `@deepseek-ai/dsh-settings`
  *   derives its forms from volatile fields only, and the Loader commits a
  *   volatile change into this running reference instead of remounting the
  *   plugin, so the settings page can change them without touching registered
@@ -102,10 +107,18 @@ export const Config = Schema.object({
     .description('Upper bound for one held key or mouse button.'),
   helperTimeoutMs: Schema.natural().min(1000).max(120000).default(15000).volatile()
     .description('How long one helper request may take before it is abandoned.'),
+  persona: Schema.object({
+    enabled: Schema.boolean().default(false),
+    activeId: Schema.union([Schema.string(), Schema.const(null)]).default(null),
+    profiles: Schema.array(Schema.object({
+      id: Schema.string(),
+      name: Schema.string().min(1).max(PERSONA_LIMITS.name),
+      prompt: Schema.string().min(1).max(PERSONA_LIMITS.prompt),
+    })).default([]),
+  }).default(emptyPersona()).volatile()
+    .description('Saved conversation persona cards, activation and selection. Explicitly saved; never changes input approval.'),
   powershellPath: Schema.string()
     .description('Windows PowerShell executable used for the resident helper.'),
-  dataDirectory: Schema.string()
-    .description('Optional local plugin data directory. Relative paths resolve from the plugin directory; changing this requires reloading the plugin.'),
   macroStoragePath: Schema.string().default(DEFAULT_MACRO_STORAGE)
     .description('Absolute path of the saved action-template store.'),
 })
@@ -142,7 +155,7 @@ function readConfigValue(value) {
  */
 export function resolveConfig(raw, warn) {
   const source = raw !== null && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
-  const config = { ...CONFIG_DEFAULTS }
+  const config = { ...CONFIG_DEFAULTS, persona: emptyPersona() }
   // The Loader hands over live references for volatile fields. Validate their
   // current snapshot for diagnostics, but remember the reference so every read
   // of the returned object sees the value committed most recently.
@@ -205,16 +218,16 @@ export function resolveConfig(raw, warn) {
       config.powershellPath = input.powershellPath
     }
   }
-  const dataDirectory = resolveDataDirectory(input.dataDirectory)
-  config.dataDirectory = input.dataDirectory === undefined ? undefined : dataDirectory
-  config.settingsPath = join(dataDirectory, 'overlay.json')
-  config.macroStoragePath = resolveMacroStorage(undefined, dataDirectory)
-  if(input.macroStoragePath!==undefined){if(typeof input.macroStoragePath!=='string'||!isAbsolute(input.macroStoragePath))reject('macroStoragePath','must be an absolute path');else config.macroStoragePath=resolveMacroStorage(input.macroStoragePath,dataDirectory)}
+  if (input.persona !== undefined) {
+    try { config.persona = validatePersona(input.persona) }
+    catch { reject('persona', 'must contain valid saved persona cards and selection') }
+  }
+  if(input.macroStoragePath!==undefined){if(typeof input.macroStoragePath!=='string'||!isAbsolute(input.macroStoragePath))reject('macroStoragePath','must be an absolute path');else config.macroStoragePath=input.macroStoragePath}
   // Volatile reads stay live: `options.overlayEnabled` must answer with the
   // value the Loader committed last, not with the apply-time snapshot.
   for (const key of Object.keys(live)) {
-    if (!Object.hasOwn(CONFIG_DEFAULTS, key) || key === 'dataDirectory') continue
-    Object.defineProperty(config, key, { enumerable: true, get: () => readConfigValue(live[key]) })
+    if (!Object.hasOwn(CONFIG_DEFAULTS, key)) continue
+    Object.defineProperty(config, key, { enumerable: true, get: () => key === 'persona' ? readPersona(readConfigValue(live[key])) : readConfigValue(live[key]) })
   }
   return config
 }
@@ -230,13 +243,11 @@ export function apply(ctx, config, runtime = {}) {
     else console.warn(message)
   }
   const options = resolveConfig(config, warn)
-  if (options.dataDirectory !== undefined) prepareDataDirectory(options.dataDirectory)
+  const timings = new PerformanceTimings()
+  let notifyPersonaChange = () => {}
 
   const overlay = (runtime.overlayFactory ?? (options => new OverlayController(options)))({
     enabled: () => options.overlayEnabled, warn,
-    settingsPath: options.settingsPath,
-    // An isolated copy must never discover the original sibling model directory.
-    defaultModel: options.dataDirectory === undefined ? undefined : join(options.dataDirectory, 'unselected-default-model'),
     // The display runtime verifies WDA_EXCLUDEFROMCAPTURE before reporting it.
     // On supported systems this keeps the pet visible during screenshots; an
     // unverified runtime still falls back to acknowledged hide + DwmFlush.
@@ -251,7 +262,7 @@ export function apply(ctx, config, runtime = {}) {
     }),
     view: () => options.overlayView,
   })
-  const management = overlay.preferences ? new OverlayManagement(overlay) : undefined
+  const management = overlay.preferences ? new OverlayManagement(overlay,{timings}) : undefined
   if (management) {
     installOverlayRemote(ctx, management)
     if(runtime.autoRestore!==false)ctx.effect(()=>{void management.restoreSelection();return()=>management.lifetime.abort()},'game-player.restore')
@@ -259,7 +270,7 @@ export function apply(ctx, config, runtime = {}) {
   const bridge = (runtime.bridgeFactory ?? ((options) => new PwshBridge(options)))({
     // A function, not a snapshot: `helperTimeoutMs` is a live setting and the
     // bridge must apply the value committed last to the next helper request.
-    timeoutMs: () => options.helperTimeoutMs,
+    timeoutMs: () => options.helperTimeoutMs, timings,
     powershell: options.powershellPath,
     logger: { warn },
     // The helper reports input events while the panel exists; the overlay drops
@@ -335,7 +346,7 @@ export function apply(ctx, config, runtime = {}) {
     return bridge.request({...request,actions,window:info,ownerId:owner},combined)
   }
   const registered = [
-    screenTool({ options, capture, attach, imageDemand, windows }),
+    screenTool({ options, capture, attach, imageDemand, windows, timings }),
     inputTool({ options, send, normalize: normalizeAction, macros }),
     watchTool({ watch }),
     windowTool({windows}),
@@ -347,7 +358,7 @@ export function apply(ctx, config, runtime = {}) {
   }
 
   // ---------------------------------------------------------------
-  // Settings: fifteen fields are volatile, so the Loader commits a new value
+  // Settings fields are volatile, so the Loader commits a new value
   // into the running reference and emits this event on the owning fiber
   // instead of remounting the plugin. Most consumers read their field at call
   // time and need no handler. Three effects are not covered by a plain read: an
@@ -386,6 +397,7 @@ export function apply(ctx, config, runtime = {}) {
         .catch(error => warn('game player: overlay style change failed: ' + (error?.message ?? error)))
     }
     if (changed('requireApproval')) reportUnsafe()
+    if (changed('persona')) notifyPersonaChange()
   })
 
   // This plugin ships its own settings page, so declare that the schema form
@@ -423,6 +435,21 @@ export function apply(ctx, config, runtime = {}) {
   // The prompt section is optional: a composition without a system-prompt
   // registry simply gets the tools and their descriptions.
   ctx.inject(['systemPrompt'], (promptCtx) => {
+    if (typeof promptCtx.systemPrompt?.section !== 'function') return
+    promptCtx.systemPrompt.section({
+      name: 'game-player-persona',
+      order: 30,
+      interpolate: false,
+      text: () => compilePersona(options.persona),
+    })
+    notifyPersonaChange = () => {
+      if (typeof promptCtx.emit !== 'function') return
+      const failed = () => warn('game player: persona prompt refresh notification failed; the saved card will still be read on the next assembly.')
+      try { Promise.resolve(promptCtx.emit('system-prompt/change')).catch(failed) }
+      catch { failed() }
+    }
+    // Dependency removal or plugin unload must not retain a closed prompt context.
+    if (typeof promptCtx.effect === 'function') promptCtx.effect(() => () => { notifyPersonaChange = () => {} })
     promptCtx.systemPrompt.section({
       name: 'game-player',
       order: 40,

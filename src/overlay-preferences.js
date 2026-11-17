@@ -1,11 +1,13 @@
 import * as fs from 'node:fs/promises'
+import { ensureStorageDirectory } from './storage-directory.js'
 import { dirname, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { validateGlobalAdapter } from './live2d/global-adapter.js'
 import { validateAdapterChange } from './live2d/model-adapter.js'
+import {validateWatermarkChange,validateWatermarkRecords} from './live2d/watermark.js'
 
 export const PREFERENCE_DEFAULTS = Object.freeze({
-  version: 5, globalAdapter: Object.freeze({}), view: 'model', modelPath: null, profilePath: null, modelEntry: null, modelOverrides: Object.freeze({}), keyboardImage: null,
+  version: 5, globalAdapter: Object.freeze({}), view: 'model', modelPath: null, profilePath: null, modelEntry: null, modelOverrides: Object.freeze({}), modelWatermarks: Object.freeze({}), keyboardImage: null,
   widthDip: 420, keyboardWidthDip: 900, opacity: 1, x: null, y: null, controlMode: 'ai-only', modelInfoVisible: true,
 })
 const ranges = { widthDip: [220, 1000], keyboardWidthDip: [450, 1350], opacity: [.45, 1] }
@@ -32,6 +34,7 @@ export function validatePreferencePatch(patch) {
      } else if (key === 'modelEntry') {
       if(value!==null&&(typeof value!=='string'||value.length>4096||!value.toLowerCase().endsWith('.model3.json')||/^[\\/]|[:%?#\0]/.test(value)||value.replaceAll('\\','/').split('/').some(p=>p==='..')))throw preferenceError('invalid_preferences','Invalid model entry.')
     } else if(key==='globalAdapter'){result[key]=value===null?null:validateGlobalAdapter(value);continue
+    } else if(key==='modelWatermarks'){result[key]=validateWatermarkRecords(value);continue
     } else if (key === 'modelOverrides') {
       if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length>32)throw preferenceError('invalid_preferences','Too many or invalid model adapters.')
       const records={}
@@ -61,10 +64,11 @@ export function validatePreferencePatch(patch) {
 /** Wire-only adapter edits are converted by management; records and paths are never caller-selected. */
 export function validatePreferenceRequest(patch){
  if(!patch||typeof patch!=='object'||Array.isArray(patch))throw preferenceError('invalid_preferences','Expected a preference patch.')
- const {modelAdapter,...base}=patch
- if('globalAdapter'in base||'modelOverrides'in base||'modelEntry'in base)throw preferenceError('invalid_preferences','Use the model selection commands.')
+ const {modelAdapter,modelWatermark,...base}=patch
+ if('globalAdapter'in base||'modelWatermarks'in base||'modelOverrides'in base||'modelEntry'in base)throw preferenceError('invalid_preferences','Use the model selection commands.')
  const result=validatePreferencePatch(base)
  if(Object.prototype.hasOwnProperty.call(patch,'modelAdapter'))result.modelAdapter=validateAdapterChange(modelAdapter)
+ if(Object.prototype.hasOwnProperty.call(patch,'modelWatermark')){if(Object.keys(patch).length!==1)throw preferenceError('invalid_preferences','Watermark changes cannot be combined with other edits.');result.modelWatermark=validateWatermarkChange(modelWatermark)}
  return result
 }
 
@@ -112,7 +116,7 @@ export class OverlayPreferences {
     this.value=data.value;this.revision=initial?data.revision:Math.max(this.revision+1,data.revision)
     this.fingerprint=data.fingerprint;this.error=null
   }
-  async load(){try{this.adopt(await this.read(),true)}catch(error){this.error=error.message}}
+  async load(){try{await ensureStorageDirectory(dirname(this.path),{io:this.io});this.adopt(await this.read(),true)}catch(error){this.error=error.message}}
   snapshot(){return {revision:this.revision,preferences:structuredClone(this.value),preferenceError:this.error}}
   async refresh(){
     await this.ready;if(this.writing)return this.snapshot()
@@ -154,7 +158,7 @@ export class OverlayPreferences {
     if(!Number.isSafeInteger(revision)||revision<0)return Promise.reject(preferenceError('invalid_revision','Invalid preference revision.'))
     const run=async()=>{
       await this.ready;this.change++
-      try{this.adopt(await this.read())}catch(error){if(!this.error)throw error}
+      this.adopt(await this.read())
       if(revision!==this.revision)throw preferenceError('preference_conflict','Preferences changed in another entry; refresh and retry.')
       const previous={...this.value},next={...previous,...validated},before=this.fingerprint
       if(!forcePrepare&&JSON.stringify(previous)===JSON.stringify(next))return this.snapshot()
@@ -162,9 +166,9 @@ export class OverlayPreferences {
       try {
         transaction=await prepare(next,previous)
         this.writing=true;this.change++
-        await this.io.mkdir(dirname(this.path),{recursive:true});unlock=await this.lock()
+        await ensureStorageDirectory(dirname(this.path),{io:this.io});unlock=await this.lock()
         let disk
-        try{disk=await this.read()}catch(error){if(!this.error)throw error}
+        disk=await this.read()
         if(disk&&disk.fingerprint!==before){this.adopt(disk);throw preferenceError('preference_conflict','Another Host saved preferences during this operation; refresh and retry.')}
         await this.persist(next,this.revision+1)
         try {await transaction?.commit?.(this.snapshot())}

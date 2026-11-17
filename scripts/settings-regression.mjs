@@ -10,8 +10,8 @@ const press=key=>({key,preventDefault(){},stopPropagation(){}})
 const button=(tree,key)=>collect(tree,n=>n.type==='button'&&n.props.key===key)[0]
 const component=(h,name)=>[...h.instances.values()].find(i=>i.type.name===name)
 
-await run('four tabs, one default panel and all editors mounted',h=>{
- const tree=h.render();assert.deepEqual(tabs(tree).map(n=>n.props.key),['common','models','appearance','safety'])
+await run('five tabs, one default panel and all editors mounted',h=>{
+ const tree=h.render();assert.deepEqual(tabs(tree).map(n=>n.props.key),['common','models','personality','appearance','safety'])
  assert.deepEqual(panels(tree).filter(n=>!n.props.hidden).map(n=>n.props.key),['common'])
  const fields=[...h.instances.values()].filter(i=>i.type.name==='FieldRow').map(i=>i.props.spec.key)
  assert.deepEqual(fields.sort(),h.ui.GROUPS.flatMap(g=>g.fields.map(f=>f.key)).sort());assert.equal(new Set(fields).size,12)
@@ -70,10 +70,10 @@ await run('invalid numbers remain local and do not save',h=>{
  choose(h,'safety');const instance=[...h.instances.values()].find(i=>i.type.name==='NumberControl'&&i.props.spec.key==='maxWidth')
  let input=collect(instance.raw,n=>n.type==='input')[0];input.props.onChange({target:{value:'9'}});h.render();input=collect(instance.raw,n=>n.type==='input')[0];input.props.onBlur({});assert.equal(h.calls.length,0);assert.ok(text(h.render()).includes(h.ui.locales.zh.outOfRange))
 })
-await run('model candidate selections survive hidden panels',h=>{
- h.state.value.modelCatalog={generation:'fixture-candidate',items:[{id:'one',name:'One',enabled:true},{id:'two',name:'Two',enabled:true}]};choose(h,'models')
- const candidate=component(h,'ModelCandidateControls'),select=collect(candidate.raw,n=>n.type==='select')[0];select.props.onChange({target:{value:'two'}})
- choose(h,'common');choose(h,'models');assert.equal(collect(candidate.raw,n=>n.type==='select')[0].props.value,'two');assert.equal(h.calls.length,0)
+await run('legacy candidate state never recreates a direct-import section',h=>{
+ h.state.value.modelCatalog={generation:'fixture-candidate',items:[{id:'one',name:'One',enabled:true}]}
+ for(const key of ['models','common','models']){const tree=choose(h,key);assert.equal(byKey(tree,'direct-import'),undefined);assert.equal(component(h,'ModelCandidateControls'),undefined)}
+ assert.equal(h.calls.length,0)
 })
 await run('library candidate checkbox draft survives hidden panels',h=>{
  h.state.value.libraryCatalog={generation:'fixture-library',items:[{id:'one',name:'One',enabled:true}]};choose(h,'models');const c=component(h,'LibraryCandidateControls')
@@ -101,10 +101,12 @@ await run('missing management does not disable Host fields or trigger recovery',
 await run('disabled overlay retains explicit recovery reason',h=>{h.state.value.enabled=false;assert.ok(text(h.render()).includes(h.ui.locales.zh['local.disabled']));assert.equal(button(h.render(),'hide').props.disabled,true)})
 await run('empty library and failed operations show visible messages',h=>{h.state.value.modelLibrary.items=[];h.state.failure={message:'Fixture failure'};const tree=choose(h,'models');assert.ok(text(tree).includes(h.ui.locales.zh['page.emptyLibrary']));assert.ok(text(byKey(tree,'runtime')).includes('Fixture failure'))})
 await run('all new labels exist in both languages',h=>{for(const key of Object.keys(h.ui.locales.zh).filter(k=>k.startsWith('page.')||k.startsWith('tabs.')))assert.ok(h.ui.locales.en[key]);for(const key of h.ui.SETTINGS_TABS)assert.ok(h.ui.locales.zh['page.'+key+'Hint'])})
-await run('recovery is secondary and imports remain distinct',h=>{
+await run('one ZIP entry replaces both import areas and recovery remains secondary',h=>{
  const tree=h.render(),recovery=byKey(tree,'recovery');for(const action of ['reloadModel','retryDisplay'])assert.ok(button(recovery,action))
- for(const action of ['addLibraryFile','addLibraryFolder','importModelFile','importModelFolder']){assert.equal(collect(tree,n=>n.type==='button'&&n.props.key===action).length,1);button(tree,action).props.onClick()}
- assert.deepEqual(h.calls.map(c=>c[1]),['addLibraryFile','addLibraryFolder','importModelFile','importModelFolder'])
+ assert.equal(collect(tree,n=>n.type==='button'&&n.props.key==='addLibraryZip').length,1)
+ for(const action of ['addLibraryFile','addLibraryFolder','importModelFile','importModelFolder'])assert.equal(button(tree,action),undefined)
+ assert.equal(byKey(tree,'direct-import'),undefined);assert.equal(component(h,'ModelCandidateControls'),undefined)
+ button(tree,'addLibraryZip').props.onClick();assert.deepEqual(h.calls.map(c=>c[1]),['addLibraryZip'])
 })
 await run('CSS hides inactive panels and responds to container width',h=>{const css=byKey(h.render(),'style').children.join('');assert.match(css,/\[hidden\]\{display:none!important\}/);assert.match(css,/@container dgp \(max-width:480px\)/);assert.match(css,/@container dgp \(max-width:640px\)/);assert.match(css,/prefers-reduced-motion/)})
 await run('range save failure remains beside its control and does not auto-retry',async h=>{

@@ -16,3 +16,22 @@ internal sealed class RendererStartupGate {
     public void Complete() { Pending = false; generation++; }
     public void Cancel() { Pending = false; generation++; }
 }
+
+
+// Keep restartable WebView2 subprocess failures out of renderer teardown.
+internal static class RendererProcessFailurePolicy {
+    internal static bool IsFatal(string? kind) => kind switch {
+        "UtilityProcessExited" or "GpuProcessExited" or "SandboxHelperProcessExited" or "FrameRenderProcessExited" or "PpapiPluginProcessExited" or "PpapiBrokerProcessExited" => false,
+        _ => true,
+    };
+    static string Clean(string? value, int limit) {
+        if (String.IsNullOrEmpty(value)) return "unknown";
+        var length = Math.Min(value.Length, limit);
+        var chars = new char[length];
+        for (int i = 0; i < length; i++) chars[i] = Char.IsControl(value[i]) ? ' ' : value[i];
+        return new string(chars);
+    }
+    internal static string Describe(string? kind, string? reason, int exitCode, string? description) =>
+        "WebView2 process failed: kind=" + Clean(kind, 64) + "; reason=" + Clean(reason, 64) +
+        "; exitCode=" + exitCode + "; description=" + Clean(description, 256);
+}

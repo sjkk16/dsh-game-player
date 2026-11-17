@@ -1,13 +1,13 @@
 /**
  * Game Player — settings UI for the Web client.
  *
- * The Host half declares twelve volatile Config fields, so
+ * The Host half declares volatile Config fields, including saved personas, so
  * `@deepseek-ai/dsh-settings` serves a form for the `game-player` entry and the
  * shared `configForms` service exposes it to this page. The same component is
  * mounted twice: once as the row's configuration page inside the Plugins
  * section, and once as its own settings page.
  *
- * Every row here is a live setting: a write goes through the Host's
+ * Ordinary rows auto-save; persona cards use explicit saves. Every write is a live setting: a write goes through the Host's
  * revision-checked form, the Loader commits the value into the running plugin
  * and the page folds the answer back from the shared snapshot. Nothing here
  * remounts the plugin.
@@ -368,15 +368,112 @@ window.__ModuleLoader__.load({
   "page.actionBlocked": "This action is unavailable. Check the runtime status or wait for the current operation to finish."
 })
 
-    const SETTINGS_TABS = ['common', 'models', 'appearance', 'safety']
+    Object.assign(zh, {
+  "tabs.personality": "人格",
+  "page.personalityHint": "管理固定人格档案。编辑草稿不会改变当前聊天人格。",
+  "persona.enabled": "启用聊天人格",
+  "persona.current": "当前生效人格",
+  "persona.off": "人格已关闭",
+  "persona.scope": "同一 Harness 配置下的聊天共用当前人格；保存或启用后，从下一次模型请求起生效，不修改历史消息。",
+  "persona.profiles": "人格档案",
+  "persona.new": "新建",
+  "persona.empty": "还没有人格档案。从空白人格卡开始吧。",
+  "persona.noSelection": "新建或选择一份档案进行编辑。选择编辑对象不会切换生效人格。",
+  "persona.card": "人格卡编辑器",
+  "persona.name": "档案名称",
+  "persona.prompt": "人格描述",
+  "persona.placeholder": "描述性格、说话风格、角色背景、对你的称呼和相处方式……",
+  "persona.promptHint": "可以保持鲜明的角色感，但技术回答仍需清晰准确。只有已保存的内容会发送给模型。",
+  "persona.unsaved": "未保存的草稿",
+  "persona.savedCard": "已保存的人格卡",
+  "persona.activeBadge": "正在使用",
+  "persona.selectedBadge": "当前选择 · 已关闭",
+  "persona.save": "保存",
+  "persona.use": "使用此人格",
+  "persona.delete": "删除",
+  "persona.cancel": "取消",
+  "persona.explicitSave": "人格卡需点击保存",
+  "persona.saving": "正在保存人格…",
+  "persona.saved": "已保存。当前启用人格的改动会在下一次模型请求中生效。",
+  "persona.unsavedTitle": "当前人格卡有未保存的修改",
+  "persona.unsavedHint": "继续操作会离开或删除当前草稿。请选择先保存、放弃修改或取消。",
+  "persona.saveContinue": "保存并继续",
+  "persona.discardContinue": "放弃修改并继续",
+  "persona.deleteTitle": "删除这份人格档案？",
+  "persona.deleteHint": "删除当前使用的档案会关闭人格功能。此操作不能撤销。",
+  "persona.invalidName": "名称不能为空，且不能超过 80 个字符。",
+  "persona.invalidPrompt": "人格描述不能为空，且不能超过 8,000 个字符。",
+  "persona.invalidState": "人格配置无效。请检查宿主配置中的档案 ID 和当前选择。",
+  "persona.conflict": "这份档案已被其他页面修改或删除。草稿已保留，请放弃草稿后重新读取，或复制内容另建档案。",
+  "persona.saveFailed": "人格保存失败，草稿已保留。请检查连接或刷新配置后重试。",
+  "persona.uuidUnavailable": "无法生成安全的档案 ID；请在 Harness 的设置页面操作。",
+  "persona.chooseFirst": "可先开启再新建，也可保持关闭直接添加。新建和保存不会自动选择或启用人格；保存后点击“使用此人格”才会应用。",
+  "persona.onWithoutSelection": "已开启，尚未选择人格（聊天不受影响）",
+  "persona.enableTarget": "启用后使用：",
+  "persona.savedOnly": "关闭时也能添加和保存档案，不会自动启用。开关只使用已保存的内容，不会保存或使用未保存的草稿。",
+  "persona.readOnly": "当前配置只读；可以查看人格，但不能保存、启用或删除。",
+  "persona.privacy": "人格随宿主配置保存，并随正常模型请求发送给现有模型提供方。请勿填写密码、密钥等秘密；本功能没有长期记忆或自动成长。",
+  "persona.compatibility": "需要宿主系统提示词服务。完全覆盖系统提示词的会话可能不会应用附加人格；角色设定不会改变工具权限或键鼠审批。"
+})
+    Object.assign(en, {
+  "tabs.personality": "Personality",
+  "page.personalityHint": "Manage fixed persona cards. Draft edits do not change the active conversation persona.",
+  "persona.enabled": "Enable conversation persona",
+  "persona.current": "Active persona",
+  "persona.off": "Persona is off",
+  "persona.scope": "Chats in the same Harness configuration share this persona. Saved or activated changes apply to the next model request, not past messages.",
+  "persona.profiles": "Persona profiles",
+  "persona.new": "New",
+  "persona.empty": "No persona profiles yet. Start with a blank card.",
+  "persona.noSelection": "Create or select a card to edit. Selecting an editor does not activate that persona.",
+  "persona.card": "Persona card editor",
+  "persona.name": "Profile name",
+  "persona.prompt": "Persona description",
+  "persona.placeholder": "Describe personality, speaking style, fictional background, how to address you, and interaction preferences…",
+  "persona.promptHint": "Keep a vivid character while technical answers remain clear and accurate. Only saved content is sent to the model.",
+  "persona.unsaved": "Unsaved draft",
+  "persona.savedCard": "Saved card",
+  "persona.activeBadge": "In use",
+  "persona.selectedBadge": "Selected · off",
+  "persona.save": "Save",
+  "persona.use": "Use this persona",
+  "persona.delete": "Delete",
+  "persona.cancel": "Cancel",
+  "persona.explicitSave": "Persona cards require Save",
+  "persona.saving": "Saving persona…",
+  "persona.saved": "Saved. Changes to the enabled active persona apply to the next model request.",
+  "persona.unsavedTitle": "This card has unsaved changes",
+  "persona.unsavedHint": "Continuing will leave or delete this draft. Save first, discard changes, or cancel.",
+  "persona.saveContinue": "Save and continue",
+  "persona.discardContinue": "Discard and continue",
+  "persona.deleteTitle": "Delete this persona profile?",
+  "persona.deleteHint": "Deleting the current profile turns personality off. This cannot be undone.",
+  "persona.invalidName": "A name is required, with a maximum of 80 characters.",
+  "persona.invalidPrompt": "A persona description is required, with a maximum of 8,000 characters.",
+  "persona.invalidState": "Invalid persona configuration. Check profile IDs and the active selection in the host configuration.",
+  "persona.conflict": "Another page changed or deleted this card. Your draft was kept. Discard it to reload, or copy the text into a new card.",
+  "persona.saveFailed": "Persona save failed. Your draft was kept. Check the connection or refresh the configuration and retry.",
+  "persona.uuidUnavailable": "A secure profile ID could not be generated. Use the settings page in Harness.",
+  "persona.chooseFirst": "Turn on before creating a card, or add cards while off. Creating and saving do not automatically select or enable a persona. Save, then choose “Use this persona” to apply it.",
+  "persona.onWithoutSelection": "Enabled, no persona selected (chat is unchanged)",
+  "persona.enableTarget": "Will enable:",
+  "persona.savedOnly": "Cards can be added and saved while off without enabling a persona. The switch uses saved content only; it never saves or applies an unsaved draft.",
+  "persona.readOnly": "This configuration is read-only. Personas can be viewed but not saved, enabled or deleted.",
+  "persona.privacy": "Personas are stored with the host configuration and sent to the existing model provider with normal requests. Do not enter passwords, keys or other secrets. There is no long-term memory or automatic growth.",
+  "persona.compatibility": "Requires the host system-prompt service. Sessions with a complete prompt override may ignore supplemental personas. Character settings never change tool permissions or input approval."
+})
+
+    const SETTINGS_TABS = ['common', 'models', 'personality', 'appearance', 'safety']
     // Moving to another settings panel must not commit an unfinished number.
     const isSettingsNavigation = event => Boolean(event?.relatedTarget?.closest?.('[data-dgp-navigation]'))
+
+    const pluginReloadError=()=>Object.assign(Error('请完全退出 DeepSeek Harness（包括托盘后台）并重新启动，以加载更新后的 ZIP 模型指令。 / Fully exit and restart DeepSeek Harness to load the updated ZIP model command.'),{code:'plugin_reload_required'})
 
     class OverlayUIController {
       constructor({setTimer=(fn,ms)=>globalThis.setTimeout(fn,ms),clearTimer=id=>globalThis.clearTimeout(id),document:doc=globalThis.document}={}) {
         this.setTimer=setTimer;this.clearTimer=clearTimer;this.doc=doc;this.listeners=new Set();this.timer=null
         this.connection=null;this.generation=0;this.sequence=0;this.applied=0;this.queue=Promise.resolve();this.calls=new Set();this.edits=new Map();this.editing=null
-        this.adapterJob=null;this.adapterCalls=new Set()
+        this.adapterJob=null;this.adapterCalls=new Set();this.summarySupported=null;this.diagnosticsOpen=false;this.diagnosticsOwners=new Set()
         this.snapshot={status:'unavailable',value:null,pending:'',failure:null,feedback:'',adapterSave:emptyAdapterSave()}
         this.visibility=()=>{this.stopPolling();if(this.visible())void this.refresh()}
       }
@@ -389,7 +486,7 @@ window.__ModuleLoader__.load({
         return()=>{this.listeners.delete(listener);if(!this.listeners.size){this.doc?.removeEventListener?.('visibilitychange',this.visibility);this.stopPolling();for(const call of this.calls)if(!this.adapterCalls.has(call))call.abort()}}
       }
       attach(connection){
-        this.detach();this.connection=connection;this.generation++;this.applied=0
+        this.detach();this.connection=connection;this.generation++;this.applied=0;this.summarySupported=null
         this.publish({status:'loading',value:null,failure:null});if(this.visible())void this.refresh()
         return()=>{if(this.connection===connection)this.detach()}
       }
@@ -403,7 +500,13 @@ window.__ModuleLoader__.load({
       async rpc(method,args,signal){
         if(!this.connection)throw Error('Desktop management unavailable')
         const response=await this.connection.rpc.call('/api','gamePlayerOverlay/'+method,{args},signal)
-        if(!response.ok)throw Error(response.error?.message??'Host request failed')
+        if(!response.ok){
+          const error=response.error??{}
+          // A stale gateway can reject a known new action before the manager runs.
+          // Never replay it as a legacy import (which would change model selection).
+          if(method==='command'&&args.action==='addLibraryZip'&&(error.code==='gateway/input-invalid'||String(error.message??'').includes('typert gateway: gamePlayerOverlay/command: wire field "action" failed boundary validation')))throw pluginReloadError()
+          throw Object.assign(Error(error.message??'Host request failed'),{code:error.code??'host_request_failed'})
+        }
         return response.value
       }
       reconcileAdapter(value){
@@ -418,34 +521,56 @@ window.__ModuleLoader__.load({
         if(this.adapterJob){this.adapterJob.canceled=true;this.adapterJob.pending={}}
         return {...save,status:'conflict',draft:{},error:{code:'stale_adapter_catalog',message:'The model or parameter directory changed. Review the current model before editing.'}}
       }
-      accept(value,id,generation,{adapterSave}={}){
+      accept(value,id,generation,{adapterSave,detailed=false}={}){
         if(generation!==this.generation)return false
         const current=this.snapshot.value
         if(current){
           if(value.stateGeneration&&value.stateGeneration===current.stateGeneration){if(value.stateRevision<current.stateRevision)return false}
           else if(id<this.applied&&value.revision<=current.revision)return false
         }
-        this.applied=Math.max(id,this.applied);this.publish({status:'ready',value,adapterSave:adapterSave??this.reconcileAdapter(value)});return true
+        this.applied=Math.max(id,this.applied)
+        if(!detailed&&!adapterSave&&this.snapshot.status==='ready'&&value.stateGeneration&&value.stateGeneration===current?.stateGeneration&&value.stateRevision===current.stateRevision&&value.revision===current.revision)return true
+        if(!detailed&&current)value={...value,...(current.inputDiagnostics&&!value.inputDiagnostics?{inputDiagnostics:current.inputDiagnostics}:{}),...(current.performanceDiagnostics&&!value.performanceDiagnostics?{performanceDiagnostics:current.performanceDiagnostics}:{})}
+        this.publish({status:'ready',value,adapterSave:adapterSave??this.reconcileAdapter(value)});return true
       }
-      async refresh(){
-        if(!this.connection||!this.visible()||this.refreshing)return
+      setDiagnosticsOpen(open,owner='default'){if(open===true)this.diagnosticsOwners.add(owner);else this.diagnosticsOwners.delete(owner);this.diagnosticsOpen=this.diagnosticsOwners.size>0;if(!this.diagnosticsOpen)this.detailRequested=false;if(open===true)void this.refresh({detailed:true})}
+      refreshDetailed(){return this.refresh({detailed:true})}
+      async refresh({detailed=false}={}){
+        if(!this.connection||!this.visible())return
+        if(this.refreshing){if(detailed)this.detailRequested=true;return}
+        detailed=detailed||this.detailRequested===true;this.detailRequested=false
         const generation=this.generation,id=++this.sequence,call=new AbortController();this.calls.add(call);this.refreshing=call
-        try{const value=await this.rpc('getState',{},call.signal);if(!call.signal.aborted)this.accept(value,id,generation)}
-        catch(error){if(!call.signal.aborted&&generation===this.generation&&id>=this.applied)this.publish({status:'unavailable',failure:error.message})}
-        finally{this.calls.delete(call);if(this.refreshing===call)this.refreshing=null;this.schedule()}
+        try{
+          let value
+          if(detailed||this.summarySupported===false)value=await this.rpc('getState',{},call.signal)
+          else {
+            try{value=await this.rpc('getSummary',{},call.signal);this.summarySupported=true}
+            catch(error){
+              const missing=['gateway/invocation-not-found','gateway/not-found','typert/invocation-not-found','method_not_found','unknown_method'].includes(error.code)||/getSummary/.test(error.message??'')&&/(unknown|not found|not registered|does not exist|unavailable method)/i.test(error.message??'')
+              if(!missing||call.signal.aborted||generation!==this.generation)throw error
+              this.summarySupported=false;value=await this.rpc('getState',{},call.signal)
+            }
+          }
+          if(!call.signal.aborted)this.accept(value,id,generation,{detailed})
+        }catch(error){if(!call.signal.aborted&&generation===this.generation&&id>=this.applied)this.publish({status:'unavailable',failure:error.message})}
+        finally{this.calls.delete(call);if(this.refreshing===call)this.refreshing=null;if(this.detailRequested&&generation===this.generation)void this.refresh({detailed:true});else this.schedule()}
       }
       perform(method,args,key,feedback){
         const generation=this.generation
         const run=async()=>{
           if(generation!==this.generation||!this.connection)return
+          // Capability comes from the running Host, not the freshly loaded client.
+          if(method==='command'&&key==='addLibraryZip'&&this.snapshot.value?.capabilities?.zipImport!==true){
+            this.publish({failure:{code:'plugin_reload_required',message:pluginReloadError().message,action:key},feedback:''});return false
+          }
           if(method==='command'&&['selectModel','selectLibraryModel','importModelFile','importModelFolder','retryDisplay'].includes(key)&&this.snapshot.adapterSave.status==='failed'&&Object.keys(this.snapshot.adapterSave.draft).length){this.publish({failure:{code:'adapter_unsaved',message:'Retry saving the global adaptation before switching models.'}});return false}
           const id=++this.sequence,call=new AbortController();this.calls.add(call);this.publish({pending:key,failure:null,feedback:''})
           try{
             const input=method==='updatePreferences'?{...args,revision:this.snapshot.value?.revision??0}:args
             const result=await this.rpc(method,input,call.signal)
-            if(!call.signal.aborted&&this.accept(result.state,id,generation))this.publish(result.success?{feedback:result.state?.modelCatalog?'modelChoice':feedback,failure:null}:{feedback:'',failure:result.error??{message:'Operation failed'}})
+            if(!call.signal.aborted&&this.accept(result.state,id,generation))this.publish(result.success?{feedback:result.state?.modelCatalog?'modelChoice':feedback,failure:null}:{feedback:'',failure:{...(result.error??{message:'Operation failed'}),action:key}})
             return result.success
-          }catch(error){if(!call.signal.aborted&&generation===this.generation)this.publish({failure:{message:error.message},feedback:''})}
+          }catch(error){if(!call.signal.aborted&&generation===this.generation)this.publish({failure:{code:error.code??'operation_failed',message:error.message,action:key},feedback:''})}
           finally{this.calls.delete(call);if(generation===this.generation&&this.snapshot.pending===key)this.publish({pending:''})}
         }
         if(key==='cancelLoad'||key==='stopPreview'||key==='stopMotion'||(key==='hide'&&this.snapshot.value?.motion)||(key==='show'&&this.snapshot.value?.motion))return run()
@@ -714,7 +839,7 @@ window.__ModuleLoader__.load({
     }
     Object.assign(zh,{
       'local.library':'我的桌宠','local.libraryHint':'添加的模型复制到本机模型库。点击选择立即显示，重启自动恢复。',
-      'local.addLibraryFile':'添加模型／ZIP','local.addLibraryFolder':'添加模型文件夹','local.libraryChoose':'选择并显示','local.libraryCurrent':'当前桌宠',
+      'local.pluginReloadRequired':'主程序仍在使用旧版插件。请完全退出 DeepSeek Harness（包括托盘后台），再重新启动后添加 ZIP 模型。','local.discoveringModels':'正在扫描 ZIP 中的模型…','local.addLibraryZip':'添加 ZIP 模型','local.zipHint':'ZIP 内需包含 .model3.json 及配套模型资源；添加不会切换当前桌宠。','local.addLibraryFile':'添加模型／ZIP','local.addLibraryFolder':'添加模型文件夹','local.libraryChoose':'选择并显示','local.libraryCurrent':'当前桌宠',
       'local.libraryDisplaying':'正在显示','local.libraryRemove':'移除','local.libraryRemoveConfirm':'从模型库移除？原始模型文件不会被删除：',
       'local.libraryAddSelected':'添加勾选模型','local.libraryCandidates':'选择要加入模型库的模型','local.libraryCandidateHint':'默认勾选有效模型；添加不会替换当前桌宠。',
       'local.libraryLimit':'最多 32 个桌宠，包含默认模型。','local.libraryUnavailable':'模型库功能需要 0.3.0 运行时，请更新并重启宿主。',
@@ -724,7 +849,7 @@ window.__ModuleLoader__.load({
     })
     Object.assign(en,{
       'local.library':'My desktop pets','local.libraryHint':'Models are copied into a local library. Select to show immediately; your last pet returns after restart.',
-      'local.addLibraryFile':'Add model / ZIP','local.addLibraryFolder':'Add model folder','local.libraryChoose':'Select and show','local.libraryCurrent':'Current pet',
+      'local.pluginReloadRequired':'The Host is still using an older plugin. Fully exit DeepSeek Harness, including the tray background process, then restart it before adding ZIP models.','local.discoveringModels':'Scanning models in the ZIP…','local.addLibraryZip':'Add ZIP model','local.zipHint':'Include .model3.json and its resources in the ZIP. Adding does not switch the current pet.','local.addLibraryFile':'Add model / ZIP','local.addLibraryFolder':'Add model folder','local.libraryChoose':'Select and show','local.libraryCurrent':'Current pet',
       'local.libraryDisplaying':'Showing','local.libraryRemove':'Remove','local.libraryRemoveConfirm':'Remove from the library? Original files will not be deleted:',
       'local.libraryAddSelected':'Add checked models','local.libraryCandidates':'Choose models to add','local.libraryCandidateHint':'Valid models are checked by default. Adding does not replace your current pet.',
       'local.libraryLimit':'Up to 32 pets including the default model.','local.libraryUnavailable':'The library requires the 0.3.0 runtime. Update and restart the Host.',
@@ -751,24 +876,47 @@ window.__ModuleLoader__.load({
         ]),
       ])
     }
+    Object.assign(zh,{'local.watermarkTitle':'作者授权水印','local.watermarkHint':'仅对已获许可并验证过的清宵、达妮娅生效；原模型资源保持不变。','local.watermarkHidden':'水印已隐藏','local.watermarkDefault':'作者默认水印','local.watermarkHide':'隐藏水印','local.watermarkRestore':'恢复作者默认','local.watermarkUnsupported':'此模型没有获授权并验证的水印开关。','local.watermarkReason.not_authorized':'该模型版本不在本次许可和验证范围内。','local.watermarkReason.parameter_mismatch':'水印参数定义与已验证版本不一致。','local.watermarkReason.validation_failed':'水印开关验证未通过，保持作者默认。','local.watermarkOld':'需要支持作者授权水印的显示程序；重新加载插件或重启宿主后生效。','local.watermarkBlocked':'请先结束动作、预览、调整或恢复已确认的输入状态。'})
+    Object.assign(en,{'local.watermarkTitle':'Authorized watermark','local.watermarkHint':'Only verified, author-permitted Qingxiao and Daniya models. Original assets stay unchanged.','local.watermarkHidden':'Watermark hidden','local.watermarkDefault':'Author default watermark','local.watermarkHide':'Hide watermark','local.watermarkRestore':'Restore author default','local.watermarkUnsupported':'No authorized and verified watermark switch for this model.','local.watermarkReason.not_authorized':'These model bytes are outside the authorized and verified list.','local.watermarkReason.parameter_mismatch':'Watermark parameter definition differs from the verified version.','local.watermarkReason.validation_failed':'Watermark validation failed; author defaults are retained.','local.watermarkOld':'Requires a watermark-capable display runtime. Reload the plugin or restart the Host.','local.watermarkBlocked':'Finish motion, preview or adjustment, or restore confirmed input state.'})
+    function ModelWatermarkControls({manager,state,value,t}){
+      const catalog=value.adapterCatalog,w=catalog?.watermark,supported=value.capabilities?.watermark===true;
+      const busy=!!state.pending||value.loading||!!value.motion||!!value.previewing||value.watermarkBlocked;
+      const enabled=state.status==='ready'&&supported&&value.enabled&&value.modelLoaded&&!busy&&w?.supported;
+      return h('div',{className:'dgp-list dgp-watermarkCard',role:'group','aria-label':t('local.watermarkTitle')},[
+        h('h4',{key:'title',className:'dgp-groupTitle'},t('local.watermarkTitle')),
+        h('p',{key:'hint',className:'dgp-hint'},t('local.watermarkHint')),
+        h('p',{key:'status',className:'dgp-status','aria-live':'polite'},t(!supported?'local.watermarkOld':!catalog?'local.adapterUnread':!w?.supported?(w?.reason?'local.watermarkReason.'+w.reason:'local.watermarkUnsupported'):w.mode==='hidden'?'local.watermarkHidden':'local.watermarkDefault')),
+        supported&&!catalog?h('button',{key:'read',type:'button',className:'dgp-button',disabled:!value.enabled||busy,onClick:()=>void manager.command('refreshAdapter')},t('local.refreshAdapter')):null,
+        w?.supported?h('div',{key:'buttons',className:'dgp-localButtons'},[
+          h('button',{key:'hide',type:'button',className:'dgp-button',disabled:!enabled||w.mode==='hidden',onClick:()=>void manager.set('modelWatermark',{catalogGeneration:catalog.generation,mode:'hidden'})},t('local.watermarkHide')),
+          h('button',{key:'restore',type:'button',className:'dgp-button',disabled:!enabled||w.mode==='default',onClick:()=>void manager.set('modelWatermark',{catalogGeneration:catalog.generation,mode:'default'})},t('local.watermarkRestore')),
+        ]):null,
+        value.watermarkBlocked?h('p',{key:'blocked',className:'dgp-hint'},t('local.watermarkBlocked')):null,
+      ])
+    }
     function ModelLibraryControls({manager,state,value,t}) {
       const library=value.modelLibrary??{revision:0,items:[]},ready=state.status==='ready',busy=!!state.pending||value.loading||!!value.motion
-      const canAdd=ready&&value.capabilities?.library&&!busy&&!value.libraryError
+      const addUnavailable=!ready?'local.unavailable':!value.capabilities?.library?'local.libraryUnavailable':value.capabilities?.picker===false?'local.pickerUnavailable':value.capabilities?.zipImport!==true?'local.pluginReloadRequired':busy?'local.importBusy':value.libraryError?'local.libraryConflict':null
+      const canAdd=!addUnavailable
       const select=item=>void manager.command({type:'selectLibraryModel',modelId:item.id,libraryRevision:library.revision,revision:value.revision})
       const remove=item=>{if(globalThis.confirm?.(t('local.libraryRemoveConfirm')+' '+item.name)===true)void manager.command({type:'removeLibraryModel',modelId:item.id,libraryRevision:library.revision,revision:value.revision})}
       return h('div',{className:'dgp-library'},[
         h('div',{key:'heading',className:'dgp-row'},[
           h('div',{key:'text',className:'dgp-text'},[h('h4',{key:'title',className:'dgp-label'},t('local.library')),h('p',{key:'hint',className:'dgp-hint'},t('local.libraryHint'))]),
-          h('div',{key:'add',className:'dgp-localButtons'},['addLibraryFile','addLibraryFolder'].map(action=>h('button',{key:action,type:'button',className:'dgp-button',disabled:!canAdd,onClick:()=>void manager.command(action)},t('local.'+action)))),
+          h('div',{key:'add',className:'dgp-localButtons'},[h('button',{key:'addLibraryZip',type:'button',className:'dgp-button dgp-primary',disabled:!canAdd,title:addUnavailable?t(addUnavailable):undefined,onClick:()=>void manager.command('addLibraryZip')},t('local.addLibraryZip'))]),
         ]),
         ready&&!value.capabilities?.library?h('p',{key:'unsupported',className:'dgp-status'},t('local.libraryUnavailable')):null,
+        h('p',{key:'zip-hint',className:'dgp-hint'},t('local.zipHint')),
+        addUnavailable?h('p',{key:'add-reason',className:'dgp-status'},t(addUnavailable)):null,
         !library.items.length?h('p',{key:'empty',className:'dgp-empty'},t('page.emptyLibrary')):null,
+        ['addLibraryZip','addLibraryModels'].includes(state.pending)?h('p',{key:'add-progress',className:'dgp-status','aria-live':'polite'},t(value.phase==='copyingModels'||state.pending==='addLibraryModels'?'local.copyingModels':value.phase==='discovering'?'local.discoveringModels':'local.picking')):null,
+        state.failure&&['addLibraryZip','addLibraryModels'].includes(state.failure.action)?h('p',{key:'add-failure',className:'dgp-status dgp-error',role:'alert'},state.failure.code==='plugin_reload_required'?t('local.pluginReloadRequired'):state.failure.message):null,
         h('div',{key:'items',className:'dgp-libraryItems','aria-label':t('local.library')},library.items.map(item=>{
           const active=value.activeModelId===item.id,showing=active&&value.visible&&value.view!=='keyboard'&&value.modelLoaded===true&&value.renderer==='live2d'
           return h('article',{key:item.id,className:'dgp-row dgp-libraryItem'+(active?' dgp-libraryActive':'')},[
             h('span',{key:'avatar',className:'dgp-libraryAvatar','aria-hidden':true},'🐾'),
             h('div',{key:'text',className:'dgp-text'},[
-              h('span',{key:'name',className:'dgp-label'},item.name),
+              h('span',{key:'name',className:'dgp-label',title:item.name},item.name),
               h('span',{key:'status',className:'dgp-hint'},!item.available?t('local.libraryMissing'):active?t(showing?'local.libraryDisplaying':'local.libraryHidden'):item.entry??t('local.default')),
               active?h('span',{key:'badge',className:'dgp-libraryBadge'},t('local.libraryCurrent')):null,
             ]),
@@ -779,7 +927,7 @@ window.__ModuleLoader__.load({
           ])
         })),
         h(LibraryCandidateControls,{key:'candidates',manager,state,value,t}),
-        (value.loading||['selectLibraryModel','addLibraryModels','addLibraryFile','addLibraryFolder','show','retryDisplay'].includes(state.pending))?h('button',{key:'library-stop-load',type:'button',className:'dgp-button',disabled:!ready,onClick:()=>void manager.command('cancelLoad')},t('local.modelCancel')):null,
+        (!value.libraryCatalog&&(value.loading||['selectLibraryModel','addLibraryModels','addLibraryFile','addLibraryFolder','addLibraryZip','show','retryDisplay'].includes(state.pending)))?h('button',{key:'library-stop-load',type:'button',className:'dgp-button',disabled:!ready,onClick:()=>void manager.command('cancelLoad')},t('local.modelCancel')):null,
         value.libraryError?h('p',{key:'error',className:'dgp-status dgp-error',role:'alert'},value.libraryError):null,
         h('p',{key:'limit',className:'dgp-hint'},t('local.libraryLimit')),
       ])
@@ -820,7 +968,7 @@ window.__ModuleLoader__.load({
         const spec={widthDip:{min:220,max:1000,fallback:420},keyboardWidthDip:{min:450,max:1350,fallback:900},opacity:{min:45,max:100,fallback:1}}[key]
         return h(LocalRange,{key,manager,spec:{key,...spec},value:prefs[key]??spec.fallback,disabled:!supported||value.loading,t,resetToken:JSON.stringify(state.failure)})
       })
-      const cancelable=value.loading||Boolean(value.modelCatalog)||Boolean(value.libraryCatalog)||['importProfile','importKeyboardImage','importModelFile','importModelFolder','selectModel','selectLibraryModel','addLibraryModels','addLibraryFile','addLibraryFolder','show','retryDisplay','reloadModel'].includes(state.pending)
+      const cancelable=value.loading||Boolean(value.modelCatalog)||Boolean(value.libraryCatalog)||['importProfile','importKeyboardImage','importModelFile','importModelFolder','selectModel','selectLibraryModel','addLibraryModels','addLibraryFile','addLibraryFolder','addLibraryZip','show','retryDisplay','reloadModel'].includes(state.pending)
       const currentName=value.modelName??value.modelLibrary?.items?.find(item=>item.id===value.activeModelId)?.name??t('local.default')
       const status=h('section',{key:'runtime',className:'dgp-runtime','aria-label':t('local.title')},[
         h('div',{key:'heading',className:'dgp-runtimeHeading'},[
@@ -842,7 +990,7 @@ window.__ModuleLoader__.load({
           value.motion?button('stopMotion'):null,
           value.adjusting?button('endAdjust',!enabled||processing):null,
         ]),
-        h('details',{key:'recovery',className:'dgp-recovery'},[
+        h('details',{key:'recovery',className:'dgp-recovery',open:Boolean(value.error||value.preferenceError)},[
           h('summary',{key:'title'},t('page.recovery')),
           h('div',{key:'actions',className:'dgp-localButtons'},[button('reloadModel',!enabled||!value.capabilities?.model||processing),button('retryDisplay',!value.enabled||processing)]),
           (!enabled||processing||!value.capabilities?.model)?h('p',{key:'reason',className:'dgp-hint'},t(!ready?'local.unavailable':!value.enabled?'local.disabled':processing?'local.importBusy':'local.runtimeLimit')):null,
@@ -851,7 +999,7 @@ window.__ModuleLoader__.load({
         ready&&!value.enabled?h('p',{key:'disabled',className:'dgp-status'},t('local.disabled')):null,
         ready&&!supported?h('p',{key:'limit',className:'dgp-status'},t('local.runtimeLimit')):null,
         value.preferenceError||value.error?h('p',{key:'runtimeError',className:'dgp-status dgp-error',role:'alert'},value.preferenceError||value.error):null,
-        error?h('p',{key:'error',className:'dgp-status dgp-error',role:'alert'},error):null,
+        error&&!['addLibraryZip','addLibraryModels'].includes(state.failure?.action)?h('p',{key:'error',className:'dgp-status dgp-error',role:'alert'},error):null,
       ])
       const common=h('div',{key:'common',className:'dgp-sectionStack'},[
         h('div',{key:'model-link',className:'dgp-modelShortcut'},[
@@ -873,11 +1021,7 @@ window.__ModuleLoader__.load({
       ])
       const models=h('div',{key:'models',className:'dgp-sectionStack'},[
         h('section',{key:'library-card',className:'dgp-list','aria-label':t('local.library')},[h(ModelLibraryControls,{key:'library',manager,state,value,t})]),
-        card('direct-import','page.modelImport',[
-          file('model',prefs.modelPath??value.modelPath,[button('importModelFile',Boolean(importUnavailable),importUnavailable),button('importModelFolder',Boolean(importUnavailable),importUnavailable)]),
-          importUnavailable?h('p',{key:'importLimit',className:'dgp-inlineHint'},t(importUnavailable)):(!value.capabilities?.model?h('p',{key:'importRecovery',className:'dgp-inlineHint'},t('local.importRecovery')):null),
-          h(ModelCandidateControls,{key:'modelCandidates',manager,state,value,t}),
-        ],'page.modelImportHint'),
+        h('details',{key:'watermark-panel',className:'dgp-libraryAdvanced'},[h('summary',{key:'title'},t('page.watermarkAdvanced')),h(ModelWatermarkControls,{key:'watermark',manager,state,value,t})]),
         h('details',{key:'advanced',className:'dgp-libraryAdvanced'},[
           h('summary',{key:'summary'},t('page.modelAdvanced')),
           h(ModelAdapterControls,{key:'adapter',manager,state,value,t}),
@@ -902,10 +1046,17 @@ window.__ModuleLoader__.load({
       return section==='all'?h('div',{className:'dgp-sectionStack'},Object.values(sections)):sections[section]??null
     }
 
+    Object.assign(zh, {"page.captureAdvanced":"截图设置","page.inputAdvanced":"输入时限与超时","page.diagnostics":"按需诊断","page.diagnosticsHint":"首次展开读取快照，点击刷新获取当前诊断。日常轮询保持轻量；样本不含画面、按键身份或输入文本。","page.refreshDiagnostics":"刷新诊断","page.noDiagnostics":"暂无样本；执行截图后刷新。","page.personaHelp":"生效范围与隐私","page.watermarkAdvanced":"作者授权水印","page.samples":"样本","page.duration":"耗时（毫秒）"})
+    Object.assign(en, {"page.captureAdvanced":"Screenshot settings","page.inputAdvanced":"Input limits and timeouts","page.diagnostics":"On-demand diagnostics","page.diagnosticsHint":"A snapshot is read on opening; use Refresh for current diagnostics. Routine polling stays lightweight. Samples contain no images, key identities or input text.","page.refreshDiagnostics":"Refresh diagnostics","page.noDiagnostics":"No samples yet; capture a frame and refresh.","page.personaHelp":"Scope and privacy","page.watermarkAdvanced":"Author-authorized watermark","page.samples":"Samples","page.duration":"Duration (ms)"})
     const CSS = `
+.dgp-advanced{border:1px solid var(--dsw-alias-border-l1);border-radius:12px;background:var(--dsw-alias-bg-layer-1);overflow:hidden}.dgp-advanced>summary{padding:14px 16px;cursor:pointer;font-weight:600;font-size:13px}.dgp-advanced[open]>summary{border-bottom:1px solid var(--dsw-alias-border-l1)}.dgp-advanced>summary:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-3px}.dgp-advanced>.dgp-group{border:0;margin:0}.dgp-diagnostics{padding:16px;display:flex;flex-direction:column;gap:12px}.dgp-diagnostics pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto;font-size:12px}.dgp-timings{width:100%;font-size:12px;border-collapse:collapse}.dgp-timings th,.dgp-timings td{text-align:left;padding:7px 4px;border-bottom:1px solid var(--dsw-alias-border-l1);overflow-wrap:anywhere}
+
+.dgp-persona{display:flex;flex-direction:column;gap:14px;min-width:0}.dgp-persona p,.dgp-persona h3,.dgp-persona h4{margin:0}.dgp-personaActivation{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px;background:var(--dsw-alias-bg-layer-1)}.dgp-personaLayout{display:grid;grid-template-columns:minmax(180px,240px) minmax(0,1fr);gap:16px;min-width:0}.dgp-personaList,.dgp-personaCard{display:flex;flex-direction:column;gap:12px;padding:16px;min-width:0;border:1px solid var(--dsw-alias-border-l1);border-radius:12px;background:var(--dsw-alias-bg-layer-1)}.dgp-personaListHeading{display:flex;align-items:center;justify-content:space-between;gap:8px}.dgp-personaItems{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto}.dgp-personaItem{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;font:inherit;font-size:13px;color:var(--dsw-alias-label-primary);background:transparent;border:1px solid transparent;border-radius:8px;padding:10px;cursor:pointer;overflow-wrap:anywhere}.dgp-personaSelected{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-2)}.dgp-personaItem:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-2px}.dgp-personaItem:disabled{opacity:.6;cursor:default}.dgp-persona .dgp-personaName{width:100%;text-align:left;padding:8px 10px}.dgp-personaPrompt{width:100%;min-height:220px;resize:vertical;padding:10px;font:inherit;font-size:13px;line-height:1.6;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-2);box-sizing:border-box}.dgp-personaPrompt:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}.dgp-personaPrompt:disabled{opacity:.6}.dgp-personaEditorStatus{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--dsw-alias-label-secondary)}.dgp-personaConfirm{padding:16px;border:1px solid var(--dsw-alias-brand-primary);border-radius:12px;background:var(--dsw-alias-bg-layer-2);display:flex;flex-direction:column;gap:12px}.dgp-personaPrivacy{padding:12px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px}.dgp-persona [data-persona-action=save],.dgp-persona [data-persona-action=use]{border-color:var(--dsw-alias-brand-primary)}.dgp-persona [data-persona-action=delete]{color:var(--dsw-alias-state-error-primary)}
+@container dgp (max-width:640px){.dgp-personaLayout{grid-template-columns:minmax(0,1fr)}.dgp-personaItems{max-height:200px}.dgp-personaCard,.dgp-personaList{padding:12px}.dgp-personaEditorStatus{flex-wrap:wrap}}
+
 .dgp-button{font:inherit;font-size:12px;padding:6px 10px;border:0.5px solid var(--dsw-alias-border-l2);border-radius:8px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-2);cursor:pointer}.dgp-button:disabled{opacity:.5;cursor:default}.dgp-button:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}.dgp-localButtons{display:flex;flex-wrap:wrap;gap:8px}.dgp-path{font-size:12px;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;color:var(--dsw-alias-label-secondary)}.dgp-localFile{align-items:center;flex-wrap:wrap}.dgp-localFile .dgp-text{min-width:200px}.dgp-localRange{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;flex:1;min-width:240px}.dgp-localRange input[type=range]{flex:1;min-width:100px;max-width:280px;accent-color:var(--dsw-alias-brand-primary)}.dgp-localLabel{min-width:130px}.dgp-localStatus{align-items:center;flex-wrap:wrap}.dgp-adapterRow{flex-wrap:wrap}.dgp-adapterActions{flex-wrap:wrap;max-width:100%}.dgp-adapterActions select{max-width:400px;min-width:180px}.dgp-adapterActions select[multiple]{min-height:70px}.dgp-page{display:flex;flex-direction:column;gap:18px;max-width:960px;box-sizing:border-box;color:var(--dsw-alias-label-primary)}
 .dgp-group{display:flex;flex-direction:column;gap:6px}
-.dgp-library{padding:4px 0}.dgp-libraryItems{margin:0 12px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px;overflow:hidden}.dgp-libraryItem{align-items:center;flex-wrap:wrap}.dgp-libraryActive{background:var(--dsw-alias-bg-layer-2)}.dgp-libraryAvatar{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:var(--dsw-alias-bg-layer-2);font-size:23px}.dgp-libraryBadge{font-size:11px;color:var(--dsw-alias-brand-primary)}.dgp-libraryCandidates{margin:12px;padding:12px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px}.dgp-libraryCandidate{display:flex;align-items:flex-start;gap:10px;margin:10px 0;overflow-wrap:anywhere}.dgp-libraryAdvanced{margin:12px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px}.dgp-libraryAdvanced>summary{padding:12px;cursor:pointer}.dgp-library h4,.dgp-library p{margin:0}.dgp-library>.dgp-hint{padding:6px 16px}.dgp-library .dgp-localButtons{flex-wrap:wrap}.dgp-groupTitle{font-size:13px;line-height:18px;font-weight:600;color:var(--dsw-alias-label-secondary);margin:0}
+.dgp-library{padding:4px 0}.dgp-libraryItems{margin:0 12px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px;overflow:hidden}.dgp-libraryItem{align-items:center;flex-wrap:wrap}.dgp-libraryActive{background:var(--dsw-alias-bg-layer-2)}.dgp-libraryAvatar{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:var(--dsw-alias-bg-layer-2);font-size:23px}.dgp-libraryBadge{font-size:11px;color:var(--dsw-alias-brand-primary)}.dgp-libraryCandidates{margin:12px;padding:12px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px}.dgp-libraryCandidate{display:flex;align-items:flex-start;gap:10px;margin:10px 0;overflow-wrap:anywhere}.dgp-libraryAdvanced{margin:12px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px}.dgp-libraryAdvanced>summary{padding:12px;cursor:pointer}.dgp-library h4,.dgp-library p{margin:0}.dgp-library>.dgp-hint{padding:6px 16px}.dgp-library .dgp-localButtons{flex-wrap:wrap}.dgp-libraryItem .dgp-label{overflow-wrap:anywhere}.dgp-libraryCandidates{min-width:0}.dgp-groupTitle{font-size:13px;line-height:18px;font-weight:600;color:var(--dsw-alias-label-secondary);margin:0}
 .dgp-list{border:0.5px solid var(--dsw-alias-border-l1);border-radius:var(--dsw-radius-lg,12px);background:var(--dsw-alias-bg-layer-1);overflow:hidden}
 .dgp-row{display:flex;align-items:flex-start;gap:16px;padding:14px 16px;box-sizing:border-box}
 .dgp-row + .dgp-row{border-top:0.5px solid var(--dsw-alias-border-l1)}
@@ -943,11 +1094,12 @@ window.__ModuleLoader__.load({
 .dgp-badge{padding:3px 9px;border-radius:6px;font-size:12px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);border:1px solid var(--dsw-alias-border-l1)}
 .dgp-recovery{border-top:1px solid var(--dsw-alias-border-l1);padding-top:8px;font-size:12px;color:var(--dsw-alias-label-secondary)}
 .dgp-recovery summary{cursor:pointer;width:fit-content}.dgp-recovery .dgp-localButtons{padding-top:10px}.dgp-recovery p{margin:8px 0 0}
-.dgp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:4px;border-radius:11px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1)}
+.dgp-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:4px;border-radius:11px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1)}
 .dgp-tab{font:inherit;font-size:13px;line-height:20px;border:1px solid transparent;border-radius:8px;padding:9px 8px;cursor:pointer;background:transparent;color:var(--dsw-alias-label-secondary);min-width:0;overflow-wrap:anywhere}
 .dgp-tab[aria-selected=true]{color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-1);border-color:var(--dsw-alias-border-l1);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .dgp-tab:hover{color:var(--dsw-alias-label-primary)}.dgp-tab:focus-visible,.dgp-tabPanel:focus-visible,.dgp-page summary:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
 .dgp-tabPanel,.dgp-sectionStack{display:flex;flex-direction:column;gap:20px;min-width:0}.dgp-panelHint{margin:0;font-size:13px;color:var(--dsw-alias-label-secondary);line-height:20px}
+.dgp-watermarkCard{display:flex;flex-direction:column;gap:9px;padding:16px}.dgp-watermarkCard>.dgp-hint{margin:0}
 .dgp-group{gap:9px;min-width:0}.dgp-groupTitle{font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary)}
 .dgp-group>.dgp-hint{margin:0}.dgp-modelShortcut{border-left:3px solid var(--dsw-alias-brand-primary);padding:4px 0 4px 14px}
 .dgp-primary{background:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);font-weight:600}
@@ -966,7 +1118,7 @@ window.__ModuleLoader__.load({
  .dgp-adapterActions{width:100%}.dgp-fieldError{text-align:left;max-width:100%}.dgp-libraryItem>.dgp-localButtons{width:100%;padding-left:58px}
 }
 @container dgp (max-width:480px){
- .dgp-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.dgp-pageHeading{align-items:flex-start}
+ .dgp-tabs{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}.dgp-tab{padding:9px 2px;font-size:12px}.dgp-pageHeading{align-items:flex-start}
  .dgp-pageHeading h2{font-size:20px}.dgp-saveState{max-width:34%}.dgp-runtime{padding:14px}
  .dgp-runtimeHeading,.dgp-modelShortcut{flex-direction:column;align-items:stretch;gap:10px}.dgp-state{flex-direction:row;flex-wrap:wrap;align-items:center;max-width:100%}
  .dgp-row{padding:12px}.dgp-libraryItem>.dgp-localButtons{padding-left:0}.dgp-localRange input[type=range]{width:100%;flex-basis:100%}
@@ -982,6 +1134,193 @@ window.__ModuleLoader__.load({
         React.useCallback((listener) => controller.subscribe(listener), [controller]),
         () => controller.getSnapshot(),
       )
+    }
+
+    // This self-contained client only imports React. The validator mirrors src/persona.js;
+    // regression tests cross-check both implementations and their limits.
+    const PERSONA_LIMITS = Object.freeze({ name: 80, prompt: 8000 })
+    const emptyPersona = () => ({ enabled: false, activeId: null, profiles: [] })
+    const SPECIAL_FIELDS = [{ key: 'persona', kind: 'persona', fallback: emptyPersona() }]
+    const personaError = key => Object.assign(new Error(key), { personaKey: key })
+    const profileKey = profile => JSON.stringify(profile)
+    // Both settings mounts share a controller. Re-read and validate each operation
+    // inside this queue, rather than queuing stale replacement objects.
+    const personaWrites = new WeakMap()
+    function validatePersona(value) {
+      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (!value || typeof value !== 'object' || Array.isArray(value) || typeof value.enabled !== 'boolean' || !Array.isArray(value.profiles)) throw personaError('invalidState')
+      if (value.activeId !== null && (typeof value.activeId !== 'string' || !uuid.test(value.activeId))) throw personaError('invalidState')
+      const ids = new Set()
+      const profiles = value.profiles.map(profile => {
+        if (!profile || typeof profile !== 'object' || Array.isArray(profile) || typeof profile.id !== 'string' || !uuid.test(profile.id) || ids.has(profile.id.toLowerCase())) throw personaError('invalidState')
+        if (typeof profile.name !== 'string' || !profile.name.trim() || profile.name.length > PERSONA_LIMITS.name) throw personaError('invalidName')
+        if (typeof profile.prompt !== 'string' || !profile.prompt.trim() || profile.prompt.length > PERSONA_LIMITS.prompt) throw personaError('invalidPrompt')
+        ids.add(profile.id.toLowerCase())
+        return { id: profile.id, name: profile.name.trim(), prompt: profile.prompt }
+      })
+      if (value.activeId !== null && !profiles.some(profile => profile.id === value.activeId)) throw personaError('invalidState')
+      // Enabled-without-selection is allowed; creation and activation are separate.
+      return { enabled: value.enabled, activeId: value.activeId, profiles }
+    }
+    function readPersona(value) {
+      try { return value === undefined ? emptyPersona() : validatePersona(value) }
+      catch { return emptyPersona() }
+    }
+
+    /** Draft selection is deliberately separate from the saved active persona. */
+    function PersonaControls({ controller, state, t }) {
+      const persona = readPersona(state.value?.persona)
+      const ready = state.status === 'ready', writable = state.writable !== false
+      const [editor, setEditor] = React.useState(null), [baseline, setBaseline] = React.useState(null)
+      const [busy, setBusy] = React.useState(false), [error, setError] = React.useState(''), [notice, setNotice] = React.useState('')
+      const [dialog, setDialog] = React.useState(null)
+      const lock = React.useRef(false), id = React.useId()
+      const dirty = editor !== null && (baseline === null || profileKey(editor) !== baseline)
+      const blocked = !ready || busy || dialog !== null
+      const load = profile => { setEditor(profile ? { ...profile } : null); setBaseline(profile ? profileKey(profile) : null); setError(''); setNotice('') }
+      const active = persona.profiles.find(profile => profile.id === persona.activeId)
+      // Saving a card does not activate it. An explicit toggle may choose a saved
+      // target without requiring a prior click on "Use this persona".
+      const toggleProfile = value => value.profiles.find(profile => profile.id === value.activeId)
+        ?? value.profiles.find(profile => profile.id === editor?.id)
+        ?? value.profiles[0]
+      const activationTarget = toggleProfile(persona)
+      // Clean editors follow external writes. Dirty drafts keep their original baseline,
+      // so a stale save cannot silently overwrite another mounted editor's changes.
+      React.useEffect(() => {
+        if (!editor || dirty || busy) return
+        const latest = persona.profiles.find(profile => profile.id === editor.id)
+        if (!latest || profileKey(latest) !== baseline) load(latest ?? null)
+      }, [JSON.stringify(persona), editor?.id, dirty, busy, baseline])
+      const failure = problem => setError(problem?.personaKey ? t('persona.' + problem.personaKey) : String(problem?.message ?? problem))
+      const current = () => {
+        const snapshot = controller.getSnapshot()
+        if (snapshot.status !== 'ready' || snapshot.writable === false) throw personaError('readOnly')
+        return snapshot.value?.persona === undefined ? emptyPersona() : validatePersona(snapshot.value.persona)
+      }
+      const persist = async (change, after) => {
+        if (lock.current || !ready || !writable) return false
+        lock.current = true; setBusy(true); setError(''); setNotice('')
+        const commit = async () => {
+          const next = validatePersona(change(current()))
+          const saved = await controller.set('persona', next)
+          if (!saved) throw personaError('saveFailed')
+          after?.(next); setNotice(t('persona.saved'))
+        }
+        const previous = personaWrites.get(controller)
+        const task = previous ? previous.catch(() => {}).then(commit) : commit()
+        personaWrites.set(controller, task)
+        try { await task; return true }
+        catch (problem) { failure(problem); return false }
+        finally {
+          if (personaWrites.get(controller) === task) personaWrites.delete(controller)
+          lock.current = false; setBusy(false)
+        }
+      }
+      const save = async () => {
+        if (!editor) return false
+        let profile
+        try { profile = validatePersona({ enabled: false, activeId: null, profiles: [editor] }).profiles[0] }
+        catch (problem) { failure(problem); return false }
+        return persist(value => {
+          const previous = value.profiles.find(item => item.id === profile.id)
+          if (baseline === null ? previous !== undefined : !previous || profileKey(previous) !== baseline) throw personaError('conflict')
+          return { ...value, profiles: previous ? value.profiles.map(item => item.id === profile.id ? profile : item) : [...value.profiles, profile] }
+        }, () => load(profile))
+      }
+      const remove = async target => {
+        if (baseline === null && !persona.profiles.some(profile => profile.id === target)) { load(null); return true }
+        return persist(value => {
+          const previous = value.profiles.find(profile => profile.id === target)
+          if (previous && baseline !== null && profileKey(previous) !== baseline) throw personaError('conflict')
+          return { enabled: value.activeId === target ? false : value.enabled, activeId: value.activeId === target ? null : value.activeId, profiles: value.profiles.filter(profile => profile.id !== target) }
+        }, () => load(null))
+      }
+      const execute = action => {
+        if (action.type === 'delete') return remove(action.id)
+        if (action.type === 'new') {
+          try {
+            const uuid = globalThis.crypto?.randomUUID?.()
+            if (!uuid) throw personaError('uuidUnavailable')
+            setEditor({ id: uuid, name: '', prompt: '' }); setBaseline(null); setError(''); setNotice('')
+          } catch (problem) { failure(problem) }
+        } else {
+          const value = readPersona(controller.getSnapshot().value?.persona)
+          load(value.profiles.find(profile => profile.id === action.id) ?? null)
+        }
+      }
+      const request = action => {
+        if (blocked || lock.current) return
+        if (action.type === 'select' && action.id === editor?.id && !dirty) return
+        if (dirty) setDialog({ kind: 'unsaved', action })
+        else if (action.type === 'delete') setDialog({ kind: 'delete', action })
+        else execute(action)
+      }
+      const proceed = async saveFirst => {
+        const action = dialog?.action
+        if (!action) return
+        if (saveFirst && !await save()) return
+        setDialog(null)
+        // A successful save has a new baseline. Deleting that saved card must not
+        // compare against the pre-save draft; its ID is still unchanged.
+        if (saveFirst && action.type === 'delete') {
+          await persist(value => {
+            const expected = validatePersona({ enabled: false, activeId: null, profiles: [editor] }).profiles[0]
+            const saved = value.profiles.find(profile => profile.id === action.id)
+            if (!saved || profileKey(saved) !== profileKey(expected)) throw personaError('conflict')
+            return { enabled: value.activeId === action.id ? false : value.enabled, activeId: value.activeId === action.id ? null : value.activeId, profiles: value.profiles.filter(profile => profile.id !== action.id) }
+          }, () => load(null))
+        } else await execute(action)
+      }
+      const use = () => {
+        if (!editor || dirty || baseline === null) return
+        return persist(value => {
+          if (!value.profiles.some(profile => profile.id === editor.id)) throw personaError('conflict')
+          return { ...value, enabled: true, activeId: editor.id }
+        })
+      }
+      const toggle = () => persist(value => {
+        if (value.enabled) return { ...value, enabled: false }
+        // Resolve inside the shared write queue against the latest saved state;
+        // never copy the editor draft into the persisted or effective persona.
+        const target = toggleProfile(value)
+        return { ...value, enabled: true, activeId: target?.id ?? null }
+      })
+      const button = (action, label, onClick, disabled = false) => h('button', { key: action, type: 'button', className: 'dgp-button', 'data-persona-action': action, disabled, onClick }, t('persona.' + label))
+      return h('div', { className: 'dgp-persona', 'data-persona-editor': true }, [
+        h('div', { key: 'activation', className: 'dgp-personaActivation' }, [
+          h('div', { className: 'dgp-text', key: 'info' }, [h('h3', { id: id + '-enabled', className: 'dgp-label', key: 'label' }, t('persona.enabled')), h('p', { className: 'dgp-hint', key: 'current' }, persona.enabled ? (active ? t('persona.current') + ' · ' + active.name : t('persona.onWithoutSelection')) : t('persona.off') + (activationTarget ? ' · ' + t('persona.enableTarget') + ' ' + activationTarget.name : '')), h('p', { id: id + '-activationHint', className: 'dgp-hint', key: 'hint' }, t(activationTarget ? 'persona.savedOnly' : 'persona.chooseFirst'))]),
+          h('button', { key: 'toggle', type: 'button', role: 'switch', className: 'dgp-switch' + (persona.enabled ? ' dgp-on' : ''), 'aria-checked': persona.enabled, 'aria-labelledby': id + '-enabled', 'aria-describedby': id + '-activationHint', 'data-persona-action': 'toggle', disabled: blocked || !writable, onClick: toggle }, h('span', { className: 'dgp-knob' })),
+        ]),
+        h('div', { key: 'layout', className: 'dgp-personaLayout' }, [
+          h('section', { key: 'list', className: 'dgp-personaList', 'aria-labelledby': id + '-list' }, [
+            h('div', { key: 'heading', className: 'dgp-personaListHeading' }, [h('h3', { key: 'label', id: id + '-list', className: 'dgp-groupTitle' }, t('persona.profiles')), button('new', 'new', () => request({ type: 'new' }), blocked || !writable)]),
+            persona.profiles.length ? h('div', { key: 'items', className: 'dgp-personaItems' }, persona.profiles.map(profile => h('button', {
+              key: profile.id, type: 'button', className: 'dgp-personaItem' + (editor?.id === profile.id ? ' dgp-personaSelected' : ''), 'data-persona-action': 'select', 'data-persona-id': profile.id, 'aria-pressed': editor?.id === profile.id, disabled: blocked, onClick: () => request({ type: 'select', id: profile.id }),
+            }, [h('span', { key: 'name' }, profile.name), profile.id === persona.activeId ? h('small', { key: 'current', className: 'dgp-libraryBadge' }, t(persona.enabled ? 'persona.activeBadge' : 'persona.selectedBadge')) : null]))) : h('p', { key: 'empty', className: 'dgp-hint' }, t('persona.empty')),
+          ]),
+          h('section', { key: 'card', className: 'dgp-personaCard', 'aria-label': t('persona.card') }, editor ? [
+            h('label', { key: 'nameLabel', htmlFor: id + '-name', className: 'dgp-label' }, t('persona.name')),
+            h('input', { key: 'name', id: id + '-name', className: 'dgp-input dgp-personaName', value: editor.name, maxLength: PERSONA_LIMITS.name, readOnly: !writable, disabled: blocked, 'data-persona-field': 'name', onChange: event => { setEditor({ ...editor, name: event.target.value }); setError(''); setNotice('') } }),
+            h('label', { key: 'promptLabel', htmlFor: id + '-prompt', className: 'dgp-label' }, t('persona.prompt')),
+            h('textarea', { key: 'prompt', id: id + '-prompt', className: 'dgp-personaPrompt', value: editor.prompt, maxLength: PERSONA_LIMITS.prompt, rows: 12, readOnly: !writable, disabled: blocked, 'data-persona-field': 'prompt', 'aria-describedby': id + '-promptHint', placeholder: t('persona.placeholder'), onChange: event => { setEditor({ ...editor, prompt: event.target.value }); setError(''); setNotice('') } }),
+            h('div', { key: 'editorStatus', className: 'dgp-personaEditorStatus' }, [h('span', { key: 'draft' }, t(dirty ? 'persona.unsaved' : 'persona.savedCard')), h('span', { key: 'count' }, editor.prompt.length + ' / ' + PERSONA_LIMITS.prompt)]),
+            h('p', { key: 'promptHint', id: id + '-promptHint', className: 'dgp-hint' }, t('persona.promptHint')),
+            h('div', { key: 'buttons', className: 'dgp-localButtons' }, [button('save', 'save', save, blocked || !writable || !dirty), button('use', 'use', use, blocked || !writable || dirty || baseline === null), button('delete', 'delete', () => request({ type: 'delete', id: editor.id }), blocked || !writable)]),
+          ] : h('p', { className: 'dgp-hint' }, t('persona.noSelection'))),
+        ]),
+        dialog ? h('div', { key: 'dialog', role: 'alertdialog', 'aria-labelledby': id + '-confirmTitle', 'aria-describedby': id + '-confirmHint', className: 'dgp-personaConfirm', onKeyDown: event => { if (event.key === 'Escape' && !busy) { event.preventDefault(); event.stopPropagation(); setDialog(null) } } }, [
+          h('h4', { key: 'title', id: id + '-confirmTitle' }, t(dialog.kind === 'unsaved' ? 'persona.unsavedTitle' : 'persona.deleteTitle')),
+          h('p', { key: 'hint', id: id + '-confirmHint', className: 'dgp-hint' }, t(dialog.kind === 'unsaved' ? 'persona.unsavedHint' : 'persona.deleteHint')),
+          h('div', { key: 'actions', className: 'dgp-localButtons' }, [dialog.kind === 'unsaved' ? button('confirm-save', 'saveContinue', () => proceed(true), busy) : null, button('confirm-discard', dialog.kind === 'unsaved' ? 'discardContinue' : 'delete', () => proceed(false), busy), h('button', { key: 'cancel', type: 'button', className: 'dgp-button', 'data-persona-action': 'cancel', autoFocus: true, disabled: busy, onClick: () => setDialog(null) }, t('persona.cancel'))]),
+        ]) : null,
+        h('p', { key: 'status', role: error ? 'alert' : 'status', className: 'dgp-status' + (error ? ' dgp-error' : ''), 'aria-live': 'polite' }, error || (busy ? t('persona.saving') : notice)),
+        !writable ? h('p', { key: 'readOnly', className: 'dgp-hint' }, t('persona.readOnly')) : null,
+        h('details',{key:'help',className:'dgp-advanced'},[
+          h('summary',{key:'title'},t('page.personaHelp')),
+          h('div',{key:'body',className:'dgp-diagnostics'},[h('p',{key:'scope',className:'dgp-hint'},t('persona.scope')),h('p',{key:'privacy',className:'dgp-hint'},t('persona.privacy')),h('p',{key:'compatibility',className:'dgp-hint'},t('persona.compatibility'))]),
+        ]),
+      ])
     }
 
     /** The value a control edits, falling back to the schema default. */
@@ -1156,14 +1495,36 @@ window.__ModuleLoader__.load({
      * Host-owned form: `set` queues a revision-checked mutation and folds the
      * answer back into the shared configuration snapshot.
      */
+    function DiagnosticsControls({manager,t,active}) {
+      const state=React.useSyncExternalStore(manager.subscribe,manager.getSnapshot,manager.getSnapshot)
+      const [open,setOpen]=React.useState(false)
+      const owner=React.useRef({}).current
+      React.useEffect(()=>{if(!active){setOpen(false);manager.setDiagnosticsOpen?.(false,owner)}return()=>manager.setDiagnosticsOpen?.(false,owner)},[manager,active,owner])
+      const samples=Object.entries(state.value?.performanceDiagnostics??{})
+      return h('details',{className:'dgp-advanced',open,onToggle:event=>{const next=active&&event.currentTarget.open;setOpen(next);manager.setDiagnosticsOpen?.(next,owner)}},[
+        h('summary',{key:'summary'},t('page.diagnostics')),
+        open?h('div',{key:'body',className:'dgp-diagnostics'},[
+          h('p',{key:'hint',className:'dgp-hint'},t('page.diagnosticsHint')),
+          h('button',{key:'refresh',type:'button',className:'dgp-button',disabled:state.status!=='ready',onClick:()=>void manager.refreshDetailed?.()},t('page.refreshDiagnostics')),
+          samples.length?h('table',{key:'timings',className:'dgp-timings'},[
+            h('thead',{key:'head'},h('tr',null,[h('th',{key:'stage'},t('page.duration')),h('th',{key:'count'},t('page.samples')),h('th',{key:'p50'},'p50'),h('th',{key:'p95'},'p95')])),
+            h('tbody',{key:'rows'},samples.map(([stage,stats])=>h('tr',{key:stage},[h('td',{key:'stage'},stage),...['count','p50','p95'].map(key=>h('td',{key},String(stats[key]??'—')))]))),
+          ]):h('p',{key:'empty',className:'dgp-hint'},t('page.noDiagnostics')),
+          state.value?.inputDiagnostics?h('pre',{key:'input'},JSON.stringify(state.value.inputDiagnostics,null,2)):null,
+        ]):null,
+      ])
+    }
     function GamePlayerSettings(props) {
+      const t=typeof props.t==='function'?props.t:key=>key
+      return props.view==='summary'?h('span',null,t('summary')):h(GamePlayerSettingsPage,props)
+    }
+    function GamePlayerSettingsPage(props) {
       const controller=props.controller,t=typeof props.t==='function'?props.t:key=>key
       const state=useConfigForm(controller)
       const desktop=props.overlay?React.useSyncExternalStore(props.overlay.subscribe,props.overlay.getSnapshot,props.overlay.getSnapshot):null
       const [pendingKey,setPendingKey]=React.useState(''),[failure,setFailure]=React.useState(null),[savedKey,setSavedKey]=React.useState('')
       const [activeTab,setActiveTab]=React.useState('common'),[focusTab,setFocusTab]=React.useState('common')
       const tabs=React.useRef({}),id=React.useId()
-      if(props.view==='summary')return h('span',null,t('summary'))
       const ready=state.status==='ready',writable=state.writable!==false
       const rawValues=ready&&state.value!==null&&typeof state.value==='object'?state.value:{}
       const values=desktop?.value?{...rawValues,overlayView:desktop.value.view??desktop.value.preferences?.view??rawValues.overlayView}:rawValues
@@ -1189,14 +1550,15 @@ window.__ModuleLoader__.load({
         else if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();activate(key)}
       }
       const overlay=section=>props.overlay?h(OverlayControls,{key:'desktop-'+section,section,manager:props.overlay,t,onManageModels:manageModels}):null
-      const content={common:[overlay('common'),groups.panel],models:[overlay('models')],appearance:[groups.keyboard,overlay('appearance')],safety:[groups.safety,groups.capture,groups.input]}
+      const advanced=(key,title,body)=>h('details',{key,className:'dgp-advanced'},[h('summary',{key:'title'},t(title)),body])
+      const content={common:[overlay('common'),groups.panel],models:[overlay('models')],personality:[h(PersonaControls,{key:'persona',controller,state,t})],appearance:[groups.keyboard,overlay('appearance')],safety:[groups.safety,advanced('capture','page.captureAdvanced',groups.capture),advanced('input','page.inputAdvanced',groups.input),props.overlay?h(DiagnosticsControls,{key:'diagnostics',manager:props.overlay,t,active:activeTab==='safety'}):null]}
       const dangerous=ready&&values.requireApproval===false
       const status=!ready?t(state.status==='unavailable'?'unavailable':'loading'):!writable?t('readOnly'):failure?.message??''
       return h('div',{className:'dgp-page'},[
         h('style',{key:'style'},CSS),
         h('header',{key:'heading',className:'dgp-pageHeading'},[
           h('div',{key:'text',className:'dgp-text'},[h('h2',{key:'title'},t('sectionTitle')),h('p',{key:'subtitle',className:'dgp-hint'},t('page.subtitle'))]),
-          h('span',{key:'save',className:'dgp-saveState','aria-live':'polite'},pendingKey?t('saving'):failure?t('saveFailed'):!ready?t('page.'+(state.status==='unavailable'?'unavailable':'loading')):!writable?t('page.readOnly'):savedKey?t('page.saved'):t('page.autosave')),
+          h('span',{key:'save',className:'dgp-saveState','aria-live':'polite'},pendingKey?t('saving'):failure?t('saveFailed'):!ready?t('page.'+(state.status==='unavailable'?'unavailable':'loading')):!writable?t('page.readOnly'):activeTab==='personality'?t('persona.explicitSave'):savedKey?t('page.saved'):t('page.autosave')),
         ]),
         dangerous?h('div',{key:'danger',className:'dgp-danger',role:'alert'},t('dangerBanner')):null,
         status?h('p',{key:'status',className:failure?'dgp-status dgp-error':'dgp-status',role:failure?'alert':undefined},status):null,
@@ -1218,11 +1580,11 @@ window.__ModuleLoader__.load({
       // exported so the test suite can cross-check them against the Host Config
       // schema without a browser; the module loader only reads `inject` and
       // `apply`.
-      GROUPS, SETTINGS_TABS, GamePlayerSettings, NumberControl,
+      GROUPS, SPECIAL_FIELDS, PERSONA_LIMITS, validatePersona, PersonaControls, SETTINGS_TABS, GamePlayerSettings, NumberControl,
       OverlayUIController,
       LocalRange,
       OverlayControls, ControlDisplaySettings,
-      modelImportUnavailable, MotionControls, ModelCandidateControls, ModelAdapterControls, ModelLibraryControls, LibraryCandidateControls,
+      modelImportUnavailable, MotionControls, ModelCandidateControls, ModelAdapterControls, ModelLibraryControls, ModelWatermarkControls, LibraryCandidateControls,
       locales: { zh, en },
       parseField,
       inject: ['slots', 'locale', 'configForms'],

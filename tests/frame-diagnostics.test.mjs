@@ -1,0 +1,3 @@
+import{test}from'node:test';import assert from'node:assert/strict';import{FrameDiagnostics}from'../desktop/frame-diagnostics.js'
+test('private timings retain only a bounded recent window over ten minutes',()=>{const d=new FrameDiagnostics();for(let i=0;i<=36000;i++)d.record(i*1000/60,i?1/60:0,3,2);const s=d.snapshot();assert.equal(s.frames,36001);assert.ok(Math.abs(s.actualFps-60)<1e-8);assert.ok(Math.abs(s.simulationSeconds-600)<1e-6);assert.equal(s.retainedSamples,512);assert.equal(s.update.p95Ms,3);assert.equal(s.draw.meanMs,2)})
+test('invalid metrics cannot silently enter QA summaries',()=>{const d=new FrameDiagnostics();assert.throws(()=>d.record(0,0,NaN,1));assert.throws(()=>d.record(0,0,1,-1))})
